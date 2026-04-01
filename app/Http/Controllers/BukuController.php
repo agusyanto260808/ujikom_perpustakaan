@@ -4,94 +4,78 @@ namespace App\Http\Controllers;
 
 use App\Models\Buku;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage; // Tambahkan ini agar lebih rapi
+use Illuminate\Support\Facades\Auth;
 
 class BukuController extends Controller
 {
     public function index()
     {
-        // Ganti get() menjadi paginate(jumlah_data_per_halaman)
-        // Misalnya kita tampilkan 10 data per halaman
-        $buku = Buku::latest()->paginate(10);
 
-        return view('buku', compact('buku'));
+        $buku = Buku::all();
+
+        // Points to resources/views/buku/index.blade.php
+        return view('buku.index', compact('buku'));
     }
+
     public function create()
     {
-        return view('buku_create');
+        return view('buku.create');
     }
 
     public function store(Request $request)
     {
-        $request->validate([
-            'judul'   => 'required|max:225',
-            'penulis' => 'required|max:225',
-            'penerbit' => 'required|max:225',
-            'tahun'   => 'required|numeric',
-            'stok'    => 'required|numeric',
-            'gambar'  => 'nullable|image|mimes:jpg,png,jpeg|max:2048',
+        $data = $request->validate([
+            'judul' => 'required',
+            'penulis' => 'required',
+            'penerbit' => 'required',
+            'tahun' => 'required|numeric',
+            'stok' => 'required|numeric',
+            'gambar' => 'required|image'
         ]);
 
-        $data = $request->all();
-
         if ($request->hasFile('gambar')) {
-            // Folder penyimpanan disesuaikan dengan view (buku_covers)
-            $data['gambar'] = $request->file('gambar')->store('buku_covers', 'public');
+            $data['gambar'] = $request->file('gambar')->store('buku', 'public');
         }
 
-        // Mengambil ID user yang sedang login untuk kolom iduser
         $data['iduser'] = auth()->id();
+        \App\Models\Buku::create($data);
 
-        Buku::create($data);
-
-        return redirect()->route('buku.index')->with('success', 'Buku berhasil ditambahkan!');
-    }
-
-    public function edit($id)
-    {
-        // Laravel akan mencari berdasarkan primary key yang didefinisikan di Model
-        $buku = Buku::findOrFail($id);
-        return view('buku_edit', compact('buku'));
+        return redirect()->route('buku.index')->with('success', 'Buku berhasil disimpan');
     }
 
     public function update(Request $request, $id)
+
     {
-        $request->validate([
-            'judul'   => 'required|max:225',
-            'penulis' => 'required|max:225',
-            'penerbit' => 'required|max:225',
-            'tahun'   => 'required|numeric',
-            'stok'    => 'required|numeric',
-            'gambar'  => 'nullable|image|mimes:jpg,png,jpeg|max:2048',
+        $buku = buku::findOrFail($id);
+
+        $data = $request->validate([
+            'judul' => 'required',
+            'penulis' => 'required',
+            'penerbit' => 'required',
+            'tahun' => 'required|numeric',
+            'stok' => 'required|numeric',
         ]);
 
-        $buku = Buku::findOrFail($id);
-        $data = $request->all();
-
         if ($request->hasFile('gambar')) {
-            // Hapus gambar lama jika ada sebelum ganti yang baru
-            if ($buku->gambar) {
-                Storage::disk('public')->delete($buku->gambar);
-            }
-            $data['gambar'] = $request->file('gambar')->store('buku_covers', 'public');
+            $data['gambar'] = $request->file('gambar')->store('buku', 'public');
         }
 
         $buku->update($data);
 
-        return redirect()->route('buku.index')->with('success', 'Buku berhasil diperbarui!');
+        return redirect()->route('buku.index')->with('success', 'Data berhasil diupdate');
     }
+    // Tambahkan ini di dalam class BukuController
+    public function edit($id)
+    {
+        // Cari data buku berdasarkan ID (sesuaikan primary key Anda, misal: idbuku)
+        $buku = \App\Models\Buku::where('idbuku', $id)->firstOrFail();
 
+        // Kirim data buku ke view edit
+        return view('buku.edit', compact('buku'));
+    }
     public function destroy($id)
     {
-        $buku = Buku::findOrFail($id);
-
-        // Hapus file fisik gambar
-        if ($buku->gambar) {
-            Storage::disk('public')->delete($buku->gambar);
-        }
-
-        $buku->delete();
-
-        return redirect()->route('buku.index')->with('success', 'Buku berhasil dihapus!');
+        buku::findOrFail($id)->delete();
+        return back()->with('success', 'Data dihapus');
     }
 }

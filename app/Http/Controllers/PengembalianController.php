@@ -12,6 +12,17 @@ class PengembalianController extends Controller
     /**
      * Menampilkan daftar buku yang sedang dipinjam (Belum Kembali)
      */
+    public function pengembalian()
+    {
+        // 1. Ambil data peminjaman yang statusnya masih dipinjam (atau denda 0 jika itu logikanya)
+        // Sesuaikan 'status' atau kondisi 'where' dengan struktur database kamu
+        $pengembalian = Peminjaman::with('buku')
+            ->where('status', 'Dipinjam') // Pastikan filter ini sesuai
+            ->get();
+
+        // 2. Kirim variabel ke view menggunakan compact
+        return view('pengembalian.index', compact('pengembalian'));
+    }
     public function index()
     {
         $pengembalian = Peminjaman::with('buku')

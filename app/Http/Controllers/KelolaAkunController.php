@@ -29,9 +29,18 @@ class KelolaAkunController extends Controller
         return view('kelola_akun.create');
     }
 
-    /**
-     * Menyimpan data akun baru ke database
-     */
+    public function create()
+    {
+        return view('kelola_akun.create');
+        User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+            'role' => $request->role,
+            // Logika: Jika role siswa simpan NISN, jika tidak simpan null
+            'nisn' => ($request->role === 'siswa') ? $request->nisn : null,
+        ]);
+    }
     public function store(Request $request)
     {
         $request->validate([
@@ -43,15 +52,7 @@ class KelolaAkunController extends Controller
             'nisn' => 'nullable|required_if:role,siswa|unique:users,nisn',
         ]);
 
-        User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'role' => $request->role,
-            // Logika: Jika role siswa simpan NISN, jika tidak simpan null
-            'nisn' => ($request->role === 'siswa') ? $request->nisn : null,
-        ]);
-
+       
         return redirect()->route('kelola_akun.index')->with('success', 'Akun berhasil dibuat!');
     }
     /**

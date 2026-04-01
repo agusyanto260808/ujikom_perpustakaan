@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+// Pastikan kedua model ini di-import
 use App\Models\Peminjaman;
+use App\Models\Pengembalian;
 use Illuminate\Http\Request;
 
 class DendaController extends Controller
@@ -12,29 +14,22 @@ class DendaController extends Controller
      */
     public function index()
     {
-        // Kita hanya mengambil data yang memiliki denda > 0
-        // Eager load 'buku' untuk menampilkan judul buku di tabel
-        $peminjamans = Peminjaman::with('buku')
-            ->where('denda', '>', 0)
-            ->latest()
-            ->get();
+        // Jika data denda ada di tabel peminjaman, gunakan Peminjaman::all()
+        // Kita simpan ke variabel $pengembalian supaya sesuai dengan yang diminta di Blade
+        $pengembalian = Peminjaman::all();
 
-        // Menghitung total denda untuk ringkasan di atas tabel
-        $totalDenda = $peminjamans->sum('denda');
-
-        return view('denda', compact('peminjamans', 'totalDenda'));
+        // Melempar variabel $pengembalian ke view denda.blade.php
+        return view('denda', compact('pengembalian'));
     }
 
     /**
-     * Opsi: Jika ingin menghapus riwayat denda tertentu
+     * Opsi: Jika ingin menghapus/meriset denda
      */
     public function destroy($id)
     {
         $denda = Peminjaman::findOrFail($id);
 
-        // Kita tidak menghapus datanya, tapi meriset dendanya jadi 0 
-        // atau biarkan saja sebagai histori permanen.
-        // Di sini saya buatkan opsi update ke 0 jika diperlukan:
+        // Update nilai denda jadi 0
         $denda->update(['denda' => 0]);
 
         return redirect()->back()->with('success', 'Riwayat denda berhasil diperbarui.');

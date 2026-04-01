@@ -11,31 +11,15 @@
                 </div>
 
                 <!-- Navigation Links -->
-                <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                    <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                        {{ __('Dashboard') }}
-                    </x-nav-link>
-                </div>
-                <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                    <x-nav-link :href="route('buku.index')" :active="request()->routeIs('buku.index')">
-                    {{ __('Buku') }}
-                    </x-nav-link>
-                </div>
-                <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                    <x-nav-link :href="route('peminjaman.index')" :active="request()->routeIs('peminjaman.index')">
-                    {{ __('Peminjaman') }}
-                    </x-nav-link>
-                </div>
-                <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                    <x-nav-link :href="route('pengembalian.index')" :active="request()->routeIs('pengembalian.index')">
-                    {{ __('Pengembalian') }}
-                    </x-nav-link>
-                </div>
-                <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                    <x-nav-link :href="route('denda.index')" :active="request()->routeIs('denda.index')">
-                    {{ __('denda') }}
-                    </x-nav-link>
-                </div>
+      <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
+    @if(Auth::user()->role === 'anggota')
+        {{-- Memanggil file nav-user.blade.php --}}
+        @include('layouts.nav-user')
+    @else
+        {{-- Memanggil file nav-admin.blade.php untuk petugas & kep_perpus --}}
+        @include('layouts.nav-admin')
+    @endif
+</div>
                 <div class="hidden sm:flex sm:items-center sm:ms-6">
     <x-dropdown align="right" width="48">
         <x-slot name="trigger">
