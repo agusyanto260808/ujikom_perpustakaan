@@ -39,7 +39,7 @@ class AuthenticatedSessionController extends Controller
 
         // Jika anggota, arahkan ke halaman utama atau dashboard anggota
         // Pastikan kamu sudah punya route bernama 'welcome' atau 'dashboard_anggota'
-        return redirect()->intended(route('welcome', absolute: false));
+        return redirect()->intended(route('dashboard', absolute: false));
     }
     /**
      * Destroy an authenticated session.

@@ -17,17 +17,17 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->enum('role', ['kep_perpus', 'petugas', 'anggota'])->default('anggota');
+            $table->string('nisn')->nullable()->unique();
             $table->rememberToken();
             $table->timestamps();
-            $table->enum('role', ['admin', 'petugas', 'siswa'])->default('siswa');
-            $table->string('nisn')->nullable()->unique(); // Pastikan namanya 'nisn' bukan yang lain
-        });
+        }); // Tutup tabel users
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {
             $table->string('email')->primary();
             $table->string('token');
             $table->timestamp('created_at')->nullable();
-        });
+        }); // Tutup tabel password_reset
 
         Schema::create('sessions', function (Blueprint $table) {
             $table->string('id')->primary();
@@ -36,9 +36,8 @@ return new class extends Migration
             $table->text('user_agent')->nullable();
             $table->longText('payload');
             $table->integer('last_activity')->index();
-        });
-    }
-
+        }); // Tutup tabel sessions
+    } // <--- SEHARUSNYA TUTUP FUNGSI UP DI SINI
     /**
      * Reverse the migrations.
      */

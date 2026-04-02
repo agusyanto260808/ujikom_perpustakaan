@@ -9,26 +9,30 @@ class Peminjaman extends Model
 {
     use HasFactory;
 
-    // Pastikan nama tabel sesuai dengan di database (misal: peminjaman)
     protected $table = 'peminjaman';
 
-    // Sesuaikan Primary Key jika bukan 'id'
-    protected $primaryKey = 'idpeminjaman';
+    // Sesuaikan dengan HeidiSQL kamu yang menuliskan 'idpinjam'
+    protected $primaryKey = 'idpinjam'; // Cek apakah di DB namanya idpinjam atau idpeminjaman
+    public $incrementing = true;
 
-    // Kolom yang boleh diisi secara massal
     protected $fillable = [
+        'iduser',        // Penting: database kamu pakai iduser, bukan nama_peminjam
         'idbuku',
-        'nama_peminjam',
         'tgl_pinjam',
-        'tgl_kembali',
-        'status'
+        'tanggal_jatuh_tempo', // Sesuaikan dengan nama di HeidiSQL
+        'status',
+        'jumlah',
+        'denda'
     ];
 
-    /**
-     * Relasi ke model Buku
-     */
     public function buku()
     {
         return $this->belongsTo(Buku::class, 'idbuku', 'idbuku');
+    }
+
+    // Tambahkan relasi User agar nama peminjam bisa muncul di tabel admin
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'iduser', 'id');
     }
 }

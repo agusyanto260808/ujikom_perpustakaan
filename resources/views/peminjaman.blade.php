@@ -33,10 +33,91 @@
                                 <th class="px-6 py-3 border-b dark:border-gray-600 text-center">Aksi</th>
                             </tr>
                         </thead>
-                        <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                            @forelse ($peminjamans as $pinjam)
+                      <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+    @forelse ($peminjaman as $pinjam)
+    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-150">
+        
+        {{-- Kolom Peminjam (Mengambil nama dari relasi User) --}}
+        <td class="px-6 py-4 font-semibold text-gray-900 dark:text-white">
+            {{ $pinjam->user->name ?? 'User Tidak Ditemukan' }}
+            <div class="text-xs text-gray-400 font-normal">{{ $pinjam->user->email ?? '' }}</div>
+        </td>
+
+        <td class="px-6 py-4">
+            {{ $pinjam->buku->judul }}
+        </td>
+
+        <td class="px-6 py-4 text-center">
+            {{ \Carbon\Carbon::parse($pinjam->tgl_pinjam)->format('d/m/Y') }}
+        </td>
+
+        <td class="px-6 py-4 text-center">
+            {{ \Carbon\Carbon::parse($pinjam->tgl_kembali)->format('d/m/Y') }}
+        </td>
+
+        <td class="px-6 py-4 text-center">
+            @if($pinjam->status == 'Menunggu')
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                    Menunggu
+                </span>
+            @elseif($pinjam->status == 'Dipinjam')
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+                    Dipinjam
+                </span>
+            @else
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                    Kembali
+                </span>
+            @endif
+        </td>
+
+        <td class="px-6 py-4 text-center">
+            <div class="flex justify-center gap-2">
+                
+                {{-- Aksi Setujui --}}
+                @if($pinjam->status == 'Menunggu')
+                    <form action="{{ route('peminjaman.update', $pinjam->idpeminjaman) }}" method="POST" class="inline">
+                        @csrf @method('PATCH')
+                        <input type="hidden" name="status" value="Dipinjam">
+                        <button class="px-3 py-1 bg-green-600 text-white text-xs font-bold rounded hover:bg-green-700 transition uppercase">
+                            Setujui
+                        </button>
+                    </form>
+                @endif
+
+                {{-- Aksi Kembalikan --}}
+                @if($pinjam->status == 'Dipinjam')
+                    <form action="{{ route('peminjaman.update', $pinjam->idpeminjaman) }}" method="POST" class="inline">
+                        @csrf @method('PATCH')
+                        <input type="hidden" name="status" value="Kembali">
+                        <button class="px-3 py-1 bg-indigo-600 text-white text-xs font-bold rounded hover:bg-indigo-700 transition uppercase">
+                            Kembalikan
+                        </button>
+                    </form>
+                @endif
+
+                {{-- Aksi Hapus --}}
+                <form action="{{ route('peminjaman.destroy', $pinjam->idpeminjaman) }}" method="POST" class="inline">
+                    @csrf @method('DELETE')
+                    <button type="submit" class="px-3 py-1 bg-red-600 text-white text-xs font-bold rounded hover:bg-red-700 transition uppercase" onclick="return confirm('Hapus data?')">
+                        Hapus
+                    </button>
+                </form>
+            </div>
+        </td>
+    </tr>
+    @empty
+    <tr>
+        <td colspan="6" class="px-6 py-10 text-center text-gray-500 italic">Belum ada data peminjaman.</td>
+    </tr>
+    @endforelse
+</tbody>
+                            @forelse ($peminjaman as $pinjam)
                             <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-150">
-                                
+                                <td class="px-6 py-4 font-semibold text-gray-900 dark:text-white">
+                                           {{-- Jika menggunakan relasi ke tabel User --}}
+                                                     {{ $pinjam->user->name ?? 'User Tidak Ditemukan' }}
+                                </td>
                                 <td class="px-6 py-4 font-semibold text-gray-900 dark:text-white">
                                     {{ $pinjam->nama_peminjam }}
                                 </td>
@@ -65,27 +146,42 @@
                                     @endif
                                 </td>
 
-                                <td class="px-6 py-4 text-center space-x-2">
-                                    <div class="flex justify-center gap-2">
-                                        @if($pinjam->status == 'Dipinjam')
-                                        <form action="{{ route('peminjaman.update', $pinjam->idpeminjaman) }}" method="POST" class="inline">
-                                            @csrf @method('PATCH')
-                                            <button class="inline-flex items-center px-3 py-1 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 transition duration-150">
-                                                Kembalikan
-                                            </button>
-                                        </form>
-                                        @endif
+                                <td class="px-6 py-4 text-center">
+                                     <div class="flex justify-center gap-2">
+        
+        {{-- JIKA STATUS MENUNGGU: Muncul tombol Setujui --}}
+        @if($pinjam->status == 'Menunggu')
+            <form action="{{ route('peminjaman.update', $pinjam->idpeminjaman) }}" method="POST" class="inline">
+                @csrf @method('PATCH')
+                <input type="hidden" name="status" value="Dipinjam">
+                <button class="inline-flex items-center px-3 py-1 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 transition">
+                    Setujui
+                </button>
+            </form>
+        @endif
 
-                                        <form action="{{ route('peminjaman.destroy', $pinjam->idpeminjaman) }}" method="POST" class="inline">
-                                            @csrf @method('DELETE')
-                                            <button type="submit" 
-                                                    class="inline-flex items-center px-3 py-1 bg-red-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-700 transition duration-150"
-                                                    onclick="return confirm('Hapus data?')">
-                                                Hapus
-                                            </button>
-                                        </form>
-                                    </div>
-                                </td>
+        {{-- JIKA STATUS DIPINJAM: Muncul tombol Kembalikan --}}
+        @if($pinjam->status == 'Dipinjam')
+            <form action="{{ route('peminjaman.update', $pinjam->idpeminjaman) }}" method="POST" class="inline">
+                @csrf @method('PATCH')
+                <input type="hidden" name="status" value="Kembali">
+                <button class="inline-flex items-center px-3 py-1 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 transition">
+                    Kembalikan
+                </button>
+            </form>
+        @endif
+
+        {{-- Tombol Hapus Tetap Ada --}}
+        <form action="{{ route('peminjaman.destroy', $pinjam->idpeminjaman) }}" method="POST" class="inline">
+            @csrf @method('DELETE')
+            <button type="submit" 
+                    class="inline-flex items-center px-3 py-1 bg-red-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-700 transition"
+                    onclick="return confirm('Hapus data?')">
+                Hapus
+            </button>
+        </form>
+    </div>
+</td>
 
                             </tr>
                             @empty
@@ -99,9 +195,9 @@
                     </table>
                 </div>
 
-                @if($peminjamans->hasPages())
+                @if($peminjaman->hasPages())
                     <div class="mt-6">
-                        {{ $peminjamans->links() }}
+                        {{ $peminjaman->links() }}
                     </div>
                 @endif
 

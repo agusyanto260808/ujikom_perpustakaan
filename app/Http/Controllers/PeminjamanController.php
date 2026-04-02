@@ -2,86 +2,74 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Buku;
-use App\Models\Peminjaman;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+use App\Models\Peminjaman;
+use App\Models\Buku;
+use Illuminate\Support\Facades\Auth;
+use Carbon\Carbon;
 
 class PeminjamanController extends Controller
 {
-    // Menampilkan daftar peminjaman
+    // Method untuk Admin (Daftar semua peminjaman)
     public function index()
     {
-        // Menggunakan eager loading 'buku' agar tidak berat (N+1 Problem)
-        $peminjamans = Peminjaman::with('buku')->latest()->paginate(10);
-        return view('peminjaman', compact('peminjamans'));
+        $peminjaman = Peminjaman::with(['buku', 'user'])->latest()->paginate(10);
+        return view('peminjaman', compact('peminjaman'));
     }
 
-    // Menampilkan form tambah (Opsional, jika kamu pakai halaman terpisah)
-    public function create()
-    {
-        // Hanya ambil buku yang stoknya lebih dari 0
-        $bukus = Buku::where('stok', '>', 0)->get();
-        return view('peminjaman_create', compact('bukus'));
-    }
-
-    // Simpan data peminjaman baru
+    // Method untuk Proses Simpan Pinjaman (Siswa)
     public function store(Request $request)
     {
         $request->validate([
             'idbuku' => 'required|exists:buku,idbuku',
-            'nama_peminjam' => 'required|string|max:255',
-            'tgl_pinjam' => 'required|date',
-            'tgl_kembali' => 'required|date|after_or_equal:tgl_pinjam',
+            'tanggal_kembali' => 'required|date', // Ini nama dari input form
+            'jumlah' => 'required|integer|min:1',
         ]);
 
-        // Database Transaction agar stok & log tetap sinkron jika ada error
-        DB::transaction(function () use ($request) {
-            // 1. Catat Peminjaman
-            Peminjaman::create([
-                'idbuku' => $request->idbuku,
-                'nama_peminjam' => $request->nama_peminjam,
-                'tgl_pinjam' => $request->tgl_pinjam,
-                'tgl_kembali' => $request->tgl_kembali,
-                'status' => 'Dipinjam',
-            ]);
+        Peminjaman::create([
+            'iduser' => auth()->id(),
+            'idbuku' => $request->idbuku,
+            'tgl_pinjam' => now(),
+            // PASTIKAN ini sesuai dengan fillable di Model (tanggal_jatuh_tempo)
+            'tanggal_jatuh_tempo' => $request->tanggal_kembali,
+            'status' => 'Menunggu',
+            'jumlah' => $request->jumlah,
+        ]);
 
-            // 2. Kurangi stok buku
-            $buku = Buku::findOrFail($request->idbuku);
-            $buku->decrement('stok');
-        });
-
-        return redirect()->route('peminjaman.index')->with('success', 'Peminjaman berhasil dicatat!');
+        return redirect()->route('riwayat_peminjaman.index')->with('success', 'Permintaan pinjam berhasil dikirim!');
     }
+    public function show($id)
+    {
+        $item = Buku::findOrFail($id);
+        // Pastikan memanggil 'pinjam_buku', bukan 'detail_buku'
+        return view('pinjam_buku', compact('item'));
+    }
+    // Method untuk Riwayat Pribadi (Siswa)
+    public function riwayat()
+    {
+        $peminjaman = Peminjaman::with('buku')
+            ->where('iduser', auth()->id())
+            ->latest()
+            ->get();
 
-    // Update status (Proses Pengembalian)
+        return view('riwayat_peminjaman', compact('peminjaman'));
+    }
     public function update(Request $request, $id)
     {
-        DB::transaction(function () use ($id) {
-            $pinjam = Peminjaman::findOrFail($id);
+        $peminjaman = Peminjaman::findOrFail($id);
 
-            if ($pinjam->status == 'Dipinjam') {
-                // 1. Ubah status jadi Kembali
-                $pinjam->update(['status' => 'Kembali']);
+        // Ambil status dari input hidden di Blade
+        $statusBaru = $request->status; // 'Dipinjam' atau 'Kembali'
 
-                // 2. Tambah stok buku kembali
-                $buku = Buku::findOrFail($pinjam->idbuku);
-                $buku->increment('stok');
-            }
-        });
+        $peminjaman->update([
+            'status' => $statusBaru
+        ]);
 
-        return redirect()->back()->with('success', 'Buku telah dikembalikan, stok diperbarui!');
-    }
+        // Logika tambahan: Jika dikembalikan, stok buku ditambah lagi
+        if ($statusBaru == 'Kembali') {
+            $peminjaman->buku->increment('stok', 1); // Sesuaikan jumlahnya jika perlu
+        }
 
-    // Hapus log peminjaman
-    public function destroy($id)
-    {
-        $pinjam = Peminjaman::findOrFail($id);
-
-        // Opsional: Jika log dihapus saat status masih 'Dipinjam', stok dikembalikan dulu?
-        // Tapi biasanya log dihapus hanya untuk data lama.
-        $pinjam->delete();
-
-        return redirect()->back()->with('success', 'Log peminjaman berhasil dihapus.');
+        return back()->with('success', 'Status peminjaman berhasil diperbarui menjadi ' . $statusBaru);
     }
 }

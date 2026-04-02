@@ -17,3 +17,8 @@
 <x-nav-link :href="route('denda.index')" :active="request()->routeIs('denda.index')">
     {{ __('Denda') }}
 </x-nav-link>
+
+<x-nav-link :href="route('kelola_akun.index')" :active="request()->routeIs('kelola_akun.index')">
+    {{ __('Kelola Akun') }}
+</x-nav-link>
+

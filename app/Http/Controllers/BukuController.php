@@ -8,12 +8,27 @@ use Illuminate\Support\Facades\Auth;
 
 class BukuController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $search = $request->input('search');
 
-        $buku = Buku::all();
+        // Query untuk mengambil data buku
+        $query = Buku::query();
 
-        // Points to resources/views/buku/index.blade.php
+        // Jika ada pencarian, filter berdasarkan judul atau penulis
+        if ($search) {
+            $query->where('judul', 'like', "%$search%")
+                ->orWhere('penulis', 'like', "%$search%");
+        }
+
+        $buku = $query->latest()->paginate(12);
+
+        // CEK: Jika yang login adalah 'anggota', arahkan ke tampilan katalog perpustakaan
+        if (auth()->user()->role === 'anggota') {
+            return view('katalog_buku', compact('buku'));
+        }
+
+        // Jika admin/petugas, arahkan ke tabel kelola buku (tampilan Master Buku)
         return view('buku.index', compact('buku'));
     }
 
@@ -72,6 +87,12 @@ class BukuController extends Controller
 
         // Kirim data buku ke view edit
         return view('buku.edit', compact('buku'));
+    }
+    public function show($id)
+    {
+        // Mencari berdasarkan idbuku karena primary key sudah diganti
+        $item = Buku::where('idbuku', $id)->firstOrFail();
+        return view('pinjam_buku', compact('item')); // Sesuaikan dengan nama file blade kamu
     }
     public function destroy($id)
     {
