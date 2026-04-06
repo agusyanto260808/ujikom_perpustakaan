@@ -6,59 +6,69 @@ use App\Models\Buku;
 use App\Models\Peminjaman;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth; // <-- WAJIB TAMBAHKAN INI
 
 class PengembalianController extends Controller
 {
-    /**
-     * Menampilkan daftar buku yang sedang dipinjam (Belum Kembali)
-     */
-    public function pengembalian()
-    {
-        // 1. Ambil data peminjaman yang statusnya masih dipinjam (atau denda 0 jika itu logikanya)
-        // Sesuaikan 'status' atau kondisi 'where' dengan struktur database kamu
-        $pengembalian = Peminjaman::with('buku')
-            ->where('status', 'Dipinjam') // Pastikan filter ini sesuai
-            ->get();
-
-        // 2. Kirim variabel ke view menggunakan compact
-        return view('pengembalian.index', compact('pengembalian'));
-    }
     public function index()
     {
-        $pengembalian = Peminjaman::with('buku')
-            ->where('status', 'Dipinjam')
-            ->latest()
+        // Ambil data yang statusnya 'proses kembali'
+        $pengembalian = Peminjaman::with(['user', 'buku'])
+            ->where('status', 'proses kembali')
             ->paginate(10);
 
         return view('pengembalian', compact('pengembalian'));
     }
 
-    /**
-     * Proses pengembalian buku
-     */
     public function store(Request $request, $id)
     {
-        // Cari data peminjaman berdasarkan ID
         $pinjam = Peminjaman::findOrFail($id);
 
-        // Pastikan statusnya memang masih dipinjam
-        if ($pinjam->status !== 'Dipinjam') {
-            return redirect()->back()->with('error', 'Buku ini sudah dikembalikan sebelumnya.');
+        try {
+            DB::transaction(function () use ($pinjam) {
+                // UPDATE STATUS
+                $pinjam->update(['status' => 'kembali']);
+
+                // CATAT KE TABEL PENGEMBALIAN
+                DB::table('pengembalian')->insert([
+                    'tanggalkembali' => now(),
+                    'idpinjam'       => $pinjam->idpinjam,
+                    'created_at'     => now(),
+                    'updated_at'     => now(),
+                ]);
+
+                // KEMBALIKAN STOK
+                if ($pinjam->buku) {
+                    $pinjam->buku->increment('stok', $pinjam->jumlah);
+                }
+            });
+
+            return redirect()->route('pengembalian.index')->with('success', 'Buku berhasil diterima!');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Gagal: ' . $e->getMessage());
         }
+    }
 
-        // Gunakan Transaction agar jika stok gagal update, status tidak berubah
-        DB::transaction(function () use ($pinjam) {
-            // 1. Update status peminjaman menjadi 'Kembali'
-            $pinjam->update([
-                'status' => 'Kembali',
-                'tgl_kembali_realitas' => now(), // Opsional: catat tanggal asli pengembalian
-            ]);
+    public function kembaliBukuUser()
+    {
+        // Menggunakan Auth::id() sekarang sudah aman karena namespace sudah di-import
+        $peminjaman = Peminjaman::with('buku')
+            ->where('iduser', Auth::id())
+            ->where('status', 'Dipinjam') // Pastikan case-sensitive sesuai DB Anda
+            ->latest()
+            ->get();
 
-            // 2. Tambah kembali stok buku tersebut
-            $buku = Buku::findOrFail($pinjam->idbuku);
-            $buku->increment('stok');
-        });
+        return view('kembali_buku', compact('peminjaman'));
+    }
 
-        return redirect()->route('peminjaman.index')->with('success', 'Buku "' . $pinjam->buku->judul . '" telah berhasil dikembalikan!');
+    public function ajukan($id)
+    {
+        $pinjam = Peminjaman::findOrFail($id);
+
+        $pinjam->update([
+            'status' => 'proses kembali'
+        ]);
+
+        return redirect()->route('kembali_buku.index')->with('success', 'Berhasil diajukan! Silakan serahkan buku ke petugas.');
     }
 }

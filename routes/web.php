@@ -31,18 +31,26 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // --- FITUR SISWA / ANGGOTA (Katalog & Peminjaman Saya) ---
+    // --- FITUR SISWA / ANGGOTA ---
+    // --- FITUR SISWA / ANGGOTA ---
     Route::get('/katalog', [BukuController::class, 'index'])->name('katalog_buku.index');
     Route::get('/katalog/{id}', [BukuController::class, 'show'])->name('katalog.show');
 
-    // Proses Simpan Pinjaman & Riwayat Pribadi
+    // Proses Simpan Pinjaman & Riwayat
     Route::post('/peminjaman/store', [PeminjamanController::class, 'store'])->name('peminjaman.store');
+    Route::delete('/peminjaman/{id}', [PeminjamanController::class, 'destroy'])->name('peminjaman.destroy');
+    Route::patch('/peminjaman/{id}', [PeminjamanController::class, 'update'])->name('peminjaman.update');
     Route::get('/riwayat-peminjaman', [PeminjamanController::class, 'riwayat'])->name('riwayat_peminjaman.index');
+
+    // --- PINDAHKAN KE SINI (Agar Anggota Bisa Akses) ---
+    Route::get('/kembali-buku', [PengembalianController::class, 'kembaliBukuUser'])->name('kembali_buku.index');
+    Route::post('/kembali-buku/ajukan/{id}', [PengembalianController::class, 'ajukan'])->name('pengembalian.ajukan');
 
 
     // ------------------------------------------------------------------
     // 3. KHUSUS ADMIN & PETUGAS (Akses Manajemen)
     // ------------------------------------------------------------------
+    // --- KHUSUS ADMIN & PETUGAS ---
     Route::group(['middleware' => function ($request, $next) {
         if (auth()->user()->role === 'anggota') {
             return redirect('/dashboard')->with('error', 'Anda tidak memiliki akses admin.');
@@ -50,23 +58,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return $next($request);
     }], function () {
 
-        // Manajemen Buku
         Route::resource('buku', BukuController::class);
 
-        // Manajemen Peminjaman (Daftar semua pinjaman untuk divalidasi)
-        // Kita beri nama route yang berbeda agar tidak bentrok dengan riwayat anggota
+        // 1. Log Peminjaman Keseluruhan (Hanya List)
         Route::get('/admin/peminjaman', [PeminjamanController::class, 'index'])->name('peminjaman.index');
-        Route::patch('/peminjaman/{id}/kembali', [PeminjamanController::class, 'update'])->name('peminjaman.update');
 
-        // Pengembalian & Denda
-        Route::get('/pengembalian', [PengembalianController::class, 'index'])->name('pengembalian.index');
-        Route::post('/pengembalian/proses/{id}', [PengembalianController::class, 'proses'])->name('pengembalian.proses');
+        // 2. Halaman Konfirmasi Pengembalian (Ini yang memanggil $pengembalian)
+        Route::get('/admin/konfirmasi-pengembalian', [PengembalianController::class, 'index'])->name('pengembalian.index');
+        // Route untuk memproses pengajuan dari user
+        Route::post('/kembali-buku/ajukan/{id}', [PengembalianController::class, 'ajukan'])->name('pengembalian.ajukan');
+        // 3. Proses Terima Buku (Gunakan POST agar sinkron dengan Controller @store)
+        Route::post('/pengembalian/proses/{id}', [PengembalianController::class, 'store'])->name('pengembalian.proses');
+
         Route::get('/denda', [DendaController::class, 'index'])->name('denda.index');
-
-        // Kelola Akun
         Route::resource('kelola-akun', KelolaAkunController::class)->names('kelola_akun');
-       
-        Route::delete('/peminjaman/{id}', [PeminjamanController::class, 'destroy'])->name('peminjaman.destroy');
-        return redirect()->route('riwayat_peminjaman.index')->with('success', 'Berhasil mengajukan peminjaman!');
     });
 });

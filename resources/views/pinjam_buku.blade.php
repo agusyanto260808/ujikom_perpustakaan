@@ -57,64 +57,47 @@
                 </div>
 
                 @if($item->stok > 0)
-                    <div class="card shadow-sm border-0 rounded-4">
-    <div class="card-body p-4">
-        <h5 class="fw-bold mb-3">Form Peminjaman</h5>
+                <div class="card shadow-sm border-0 rounded-4">
+                    <div class="card-body p-4">
+                         <h5 class="fw-bold mb-3">Form Peminjaman</h5>
         
-        <form action="{{ route('peminjaman.store') }}" method="POST">
-            @csrf
-            {{-- ID Buku tersembunyi --}}
-            <input type="hidden" name="idbuku" value="{{ $item->idbuku }}">
-
-            <div class="mb-3">
-                <label class="form-label small fw-bold text-muted">Tanggal Kembali</label>
-                <input type="date" name="tanggal_kembali" 
-                       class="form-control" 
-                       value="{{ now()->addDays(7)->format('Y-m-d') }}" 
-                       required>
-            </div>
-
-            <div class="mb-4">
-                            <label class="form-label fw-bold small text-secondary">Jumlah Pinjam:</label>
-                            <div class="input-group">
-                                <button class="btn btn-outline-secondary" type="button" onclick="changeValue(-1)">-</button>
-                                <input type="number" name="jumlah" id="qty" value="1" min="1" max="{{ $item->stok }}" 
-                                       class="form-control text-center fw-bold" oninput="validateInput(this)">
-                                <button class="btn btn-outline-secondary" type="button" onclick="changeValue(1)">+</button>
-                            </div>
-                            <small id="error-msg" class="text-danger d-none">Melebihi stok!</small>
-                        </div>
-            <button type="submit" class="btn btn-primary w-100 py-2 fw-bold shadow-sm">
-                KONFIRMASI PINJAM
-            </button>
-        </form>
-    </div>
-</div>
-                        @csrf
-                        <input type="hidden" name="idbuku" value="{{ $item->idbuku }}">
-
-                        <div class="mb-3">
-                            <label class="form-label fw-bold small text-secondary">Estimasi Tanggal Kembali:</label>
-                            <input type="date" 
-                                   name="tanggal_kembali" 
-                                   value="{{ now()->addDays(7)->format('Y-m-d') }}"
-                                   min="{{ now()->addDays(1)->format('Y-m-d') }}"
-                                   class="form-control rounded-3" required>
-                        </div>
-
-                       
-
                         <form action="{{ route('peminjaman.store') }}" method="POST">
     @csrf
-</form>
+    <input type="hidden" name="idbuku" value="{{ $item->idbuku }}">
+
+    <div class="mb-3">
+        <label class="form-label small fw-bold text-muted">Tanggal Kembali</label>
+        <input type="date" name="tanggal_kembali" 
+               class="form-control" 
+               value="{{ now()->addDays(7)->format('Y-m-d') }}" 
+               min="{{ now()->addDays(1)->format('Y-m-d') }}"
+               required>
+    </div>
+
+    <div class="mb-4">
+        <label class="form-label fw-bold small text-secondary">Jumlah Pinjam:</label>
+        <div class="input-group">
+            <button class="btn btn-outline-secondary" type="button" onclick="changeValue(-1)">-</button>
+            <input type="number" name="jumlah" id="qty" value="1" min="1" max="{{ $item->stok }}" 
+                   class="form-control text-center fw-bold">
+            <button class="btn btn-outline-secondary" type="button" onclick="changeValue(1)">+</button>
+        </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary w-100 py-2 fw-bold">
+        KONFIRMASI PINJAM
+    </button>
+
+                    </div>
+                  </div>
+            </div>
+    </div>
+</div>  
+
                     </form>
                 @else
                     <button disabled class="btn btn-secondary w-100 py-3 fw-bold rounded-3 mb-2">STOK HABIS</button>
                 @endif
-
-                <button class="btn btn-outline-danger w-100 py-2 fw-bold rounded-3">
-                    ❤ Favorit
-                </button>
             </div>
         </div>
     </div>

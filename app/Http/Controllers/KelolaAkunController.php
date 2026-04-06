@@ -10,28 +10,37 @@ use Illuminate\Validation\Rules;
 class KelolaAkunController extends Controller
 {
     /**
-     * Menampilkan daftar semua pengguna (Admin, Petugas, Siswa)
+     * Menampilkan daftar semua pengguna
      */
     public function index()
     {
-        // Nama variabelnya adalah $users (ada huruf 's')
         $users = User::latest()->paginate(10);
-
-        // Di dalam compact harus sama persis namanya: 'users'
         return view('kelola_akun.index', compact('users'));
     }
 
     /**
-     * Menampilkan form pendaftaran akun baru
+     * Menampilkan form pendaftaran akun baru (HANYA VIEW)
      */
     public function create()
     {
         return view('kelola_akun.create');
     }
 
-    public function create()
+    /**
+     * Menyimpan data akun baru ke database
+     */
+    public function store(Request $request)
     {
-        return view('kelola_akun.create');
+        // 1. Validasi Data
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users',
+            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'role' => 'required|in:admin,petugas,siswa',
+            'nisn' => 'nullable|required_if:role,siswa|unique:users,nisn',
+        ]);
+
+        // 2. Proses Simpan ke Database
         User::create([
             'name' => $request->name,
             'email' => $request->email,
@@ -40,21 +49,11 @@ class KelolaAkunController extends Controller
             // Logika: Jika role siswa simpan NISN, jika tidak simpan null
             'nisn' => ($request->role === 'siswa') ? $request->nisn : null,
         ]);
-    }
-    public function store(Request $request)
-    {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users',
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            'role' => 'required|in:admin,petugas,siswa',
-            // NISN wajib diisi HANYA jika role adalah siswa
-            'nisn' => 'nullable|required_if:role,siswa|unique:users,nisn',
-        ]);
 
-       
+        // 3. Redirect ke Halaman Index
         return redirect()->route('kelola_akun.index')->with('success', 'Akun berhasil dibuat!');
     }
+
     /**
      * Menghapus akun pengguna
      */
@@ -62,23 +61,26 @@ class KelolaAkunController extends Controller
     {
         $user = User::findOrFail($id);
 
-        // Mencegah admin menghapus dirinya sendiri
         if (auth()->id() == $user->id) {
             return redirect()->back()->with('error', 'Anda tidak bisa menghapus akun sendiri!');
         }
 
         $user->delete();
-
         return redirect()->route('kelola_akun.index')->with('success', 'Akun berhasil dihapus.');
     }
 
-    // Untuk fitur Edit dan Update (Opsional jika dibutuhkan nanti)
+    /**
+     * Menampilkan form edit
+     */
     public function edit($id)
     {
         $user = User::findOrFail($id);
         return view('kelola_akun.edit', compact('user'));
     }
 
+    /**
+     * Memperbarui data pengguna
+     */
     public function update(Request $request, $id)
     {
         $user = User::findOrFail($id);
@@ -92,7 +94,6 @@ class KelolaAkunController extends Controller
         $user->update([
             'name' => $request->name,
             'role' => $request->role,
-            // Logika yang sama: Paksa null jika role diubah dari siswa ke petugas/admin
             'nisn' => ($request->role === 'siswa') ? $request->nisn : null,
         ]);
 

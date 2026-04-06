@@ -72,7 +72,7 @@
                                             </div>
                                             <div>
                                                 <div class="text-sm font-black text-gray-900 dark:text-white leading-none">{{ $item->nama_peminjam }}</div>
-                                                <div class="text-[10px] text-gray-400 font-bold mt-1 tracking-tighter">ID: TX-{{ $item->idpeminjaman }}</div>
+                                                <div class="text-[10px] text-gray-400 font-bold mt-1 tracking-tighter">ID: TX-{{ $item->idpinjam }}</div>
                                             </div>
                                         </div>
                                     </td>
@@ -93,7 +93,7 @@
                                         </div>
                                     </td>
                                     <td class="px-6 py-6 text-right bg-gray-50/50 dark:bg-gray-700/30 rounded-r-[1.5rem] border-y border-r border-gray-50 dark:border-gray-700">
-                                        <form action="{{ route('pengembalian.proses', $item->idpeminjaman) }}" method="POST" onsubmit="return confirm('Selesaikan pengembalian buku ini?')">
+                                       <form action="{{ route('pengembalian.store', $item->idpinjam) }}" method="POST">
                                             @csrf
                                             <button type="submit" class="inline-flex items-center px-6 py-2.5 bg-emerald-500 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-emerald-600 hover:scale-105 active:scale-95 transition-all shadow-lg shadow-emerald-100 dark:shadow-none">
                                                 <svg class="w-3.5 h-3.5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>

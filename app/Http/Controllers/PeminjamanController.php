@@ -6,31 +6,37 @@ use Illuminate\Http\Request;
 use App\Models\Peminjaman;
 use App\Models\Buku;
 use Illuminate\Support\Facades\Auth;
-use Carbon\Carbon;
 
 class PeminjamanController extends Controller
 {
-    // Method untuk Admin (Daftar semua peminjaman)
+
+
     public function index()
     {
-        $peminjaman = Peminjaman::with(['buku', 'user'])->latest()->paginate(10);
+        $peminjaman = Peminjaman::with(['user', 'buku'])->paginate(10);
+
+        // Ganti 'pengembalian' menjadi nama file blade peminjaman Anda
         return view('peminjaman', compact('peminjaman'));
     }
 
-    // Method untuk Proses Simpan Pinjaman (Siswa)
+    // ... method ajukan dan store sudah benar secara logika ...
+
+
+    // ... method lainnya (store, update, destroy) tetap seperti sebelumnya
+
+
     public function store(Request $request)
     {
         $request->validate([
             'idbuku' => 'required|exists:buku,idbuku',
-            'tanggal_kembali' => 'required|date', // Ini nama dari input form
+            'tanggal_kembali' => 'required|date|after:today',
             'jumlah' => 'required|integer|min:1',
         ]);
 
         Peminjaman::create([
             'iduser' => auth()->id(),
             'idbuku' => $request->idbuku,
-            'tgl_pinjam' => now(),
-            // PASTIKAN ini sesuai dengan fillable di Model (tanggal_jatuh_tempo)
+            'tanggal_pinjam' => now(),
             'tanggal_jatuh_tempo' => $request->tanggal_kembali,
             'status' => 'Menunggu',
             'jumlah' => $request->jumlah,
@@ -38,38 +44,48 @@ class PeminjamanController extends Controller
 
         return redirect()->route('riwayat_peminjaman.index')->with('success', 'Permintaan pinjam berhasil dikirim!');
     }
+
     public function show($id)
     {
         $item = Buku::findOrFail($id);
-        // Pastikan memanggil 'pinjam_buku', bukan 'detail_buku'
         return view('pinjam_buku', compact('item'));
     }
-    // Method untuk Riwayat Pribadi (Siswa)
+
+    // Halaman Riwayat untuk Siswa/User
     public function riwayat()
     {
-        $peminjaman = Peminjaman::with('buku')
+        // Mengambil data peminjaman milik user yang sedang login
+        $peminjaman = Peminjaman::with(['buku', 'user'])
             ->where('iduser', auth()->id())
             ->latest()
-            ->get();
+            ->paginate(10);
 
         return view('riwayat_peminjaman', compact('peminjaman'));
     }
+
     public function update(Request $request, $id)
     {
-        $peminjaman = Peminjaman::findOrFail($id);
+        $peminjaman = Peminjaman::with('buku')->findOrFail($id);
+        $statusBaru = $request->status;
+        $statusLama = $peminjaman->status;
 
-        // Ambil status dari input hidden di Blade
-        $statusBaru = $request->status; // 'Dipinjam' atau 'Kembali'
-
-        $peminjaman->update([
-            'status' => $statusBaru
-        ]);
-
-        // Logika tambahan: Jika dikembalikan, stok buku ditambah lagi
-        if ($statusBaru == 'Kembali') {
-            $peminjaman->buku->increment('stok', 1); // Sesuaikan jumlahnya jika perlu
+        // Logika Pengurangan Stok (Saat Admin menyetujui)
+        if ($statusBaru == 'Dipinjam' && $statusLama == 'Menunggu') {
+            if ($peminjaman->buku->stok < $peminjaman->jumlah) {
+                return back()->with('error', 'Stok buku tidak mencukupi!');
+            }
+            $peminjaman->buku->decrement('stok', $peminjaman->jumlah);
         }
 
-        return back()->with('success', 'Status peminjaman berhasil diperbarui menjadi ' . $statusBaru);
+        $peminjaman->status = $statusBaru;
+        $peminjaman->save();
+
+        return back()->with('success', "Status diperbarui menjadi $statusBaru.");
+    }
+    public function destroy($id)
+    {
+        $peminjaman = Peminjaman::findOrFail($id);
+        $peminjaman->delete();
+        return back()->with('success', 'Data peminjaman berhasil dihapus.');
     }
 }
