@@ -23,10 +23,11 @@
                     </h3>
                 </div>
 
-                <div class="overflow-x-auto">
+               <div class="overflow-x-auto">
                     <table class="w-full text-sm text-left">
                         <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-300">
                             <tr>
+                                <th class="px-6 py-4 w-10">No</th> {{-- Kolom ID Baru --}}
                                 <th class="px-6 py-4">Informasi Peminjam</th>
                                 <th class="px-6 py-4">Buku yang Dipinjam</th>
                                 <th class="px-6 py-4 text-center">Tgl Pinjam</th>
@@ -37,73 +38,74 @@
                         </thead>
                         <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
                             @forelse ($peminjaman as $pinjam)
+                            @php
+        $statusLower = strtolower($pinjam->status);
+        $badgeClass = [
+            'menunggu'       => 'bg-amber-100 text-amber-700 border-amber-200',
+            'dipinjam'       => 'bg-blue-100 text-blue-700 border-blue-200',
+            'proses kembali' => 'bg-purple-100 text-purple-700 border-purple-200 animate-pulse',
+            'kembali'        => 'bg-emerald-100 text-emerald-700 border-emerald-200',
+            'terlambat'      => 'bg-red-100 text-red-700 border-red-200',
+        ][$statusLower] ?? 'bg-gray-100 text-gray-700 border-gray-200';
+    @endphp
                             <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-200">
+                                {{-- ID / NOMOR URUT --}}
+                                <td class="px-6 py-4 font-semibold text-gray-500 dark:text-gray-400">
+                                    {{ ($peminjaman->currentPage() - 1) * $peminjaman->perPage() + $loop->iteration }}
+                                </td>
+
                                 <td class="px-6 py-4">
                                     <div class="flex flex-col">
-                                        <span class="font-bold text-gray-900 dark:text-white">{{ $pinjam->user->name ?? 'User N/A' }}</span>
-                                        <span class="text-[10px] text-gray-500 font-mono">ID: #{{ $pinjam->idpinjam }}</span>
+                                        <span class="font-bold text-gray-900 dark:text-gray-200">{{ $pinjam->user->name ?? 'User N/A' }}</span>
                                     </div>
                                 </td>
 
-                                <td class="px-6 py-4 font-medium text-gray-900 dark:text-gray-200">
-                                    {{ $pinjam->buku->judul ?? 'Buku Dihapus' }}
-                                    <div class="text-xs text-indigo-600 font-semibold mt-1">{{ $pinjam->jumlah }} Buku</div>
+                                <td class="px-6 py-4">
+                                    <div class="font-medium text-gray-900 dark:text-gray-200">{{ $pinjam->buku->judul ?? 'Buku Dihapus' }}</div>
+                                    <div class="inline-flex items-center px-2 py-0.5 mt-1 rounded text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
+                                        {{ $pinjam->jumlah }} Buku
+                                    </div>
                                 </td>
 
                                 <td class="px-6 py-4 text-center text-gray-600 dark:text-gray-400">
                                     {{ \Carbon\Carbon::parse($pinjam->tanggal_pinjam)->format('d/m/Y') }}
                                 </td>
 
-                                <td class="px-6 py-4 text-center text-gray-600 dark:text-gray-400 font-medium">
-                                    {{ \Carbon\Carbon::parse($pinjam->tanggal_jatuh_tempo)->format('d/m/Y') }}
-                                </td>
+                                <td class="px-6 py-4 text-center font-medium {{ \Carbon\Carbon::parse($pinjam->tanggal_jatuh_tempo)->isPast() && $statusLower != 'kembali' ? 'text-red-600' : 'text-gray-600 dark:text-gray-400' }}">
+            {{ \Carbon\Carbon::parse($pinjam->tanggal_jatuh_tempo)->format('d/m/Y') }}
+        </td>
 
-                                <td class="px-6 py-4 text-center">
-                                    @php
-                                        $statusLower = strtolower($pinjam->status);
-                                        $badgeClass = [
-                                            'menunggu'       => 'bg-amber-100 text-amber-700 border-amber-200',
-                                            'dipinjam'       => 'bg-blue-100 text-blue-700 border-blue-200',
-                                            'proses kembali' => 'bg-purple-100 text-purple-700 border-purple-200 animate-pulse',
-                                            'kembali'        => 'bg-emerald-100 text-emerald-700 border-emerald-200',
-                                            'terlambat'      => 'bg-red-100 text-red-700 border-red-200',
-                                        ][$statusLower] ?? 'bg-gray-100 text-gray-700 border-gray-200';
-                                    @endphp
-                                    <span class="px-3 py-1 rounded-full text-[10px] font-bold border {{ $badgeClass }}">
-                                        {{ strtoupper($pinjam->status) }}
-                                    </span>
-                                </td>
+        {{-- Kolom Status --}}
+        <td class="px-6 py-4 text-center">
+            <span class="px-3 py-1 rounded-full text-[10px] font-bold border {{ $badgeClass }}">
+                {{ strtoupper($pinjam->status) }}
+            </span>
+        </td>
 
                                 <td class="px-6 py-4 text-center">
                                     <div class="flex justify-center items-center gap-2">
-                                        {{-- 1. SETUJUI PINJAMAN (Jika status Menunggu) --}}
                                         @if($statusLower == 'menunggu')
-                                        <form action="{{ route('peminjaman.update', $pinjam->idpinjam) }}" method="POST">
-                                            @csrf @method('PATCH')
-                                            <input type="hidden" name="status" value="Dipinjam">
-                                            <button class="bg-blue-600 hover:bg-blue-700 text-white text-[10px] uppercase font-bold py-1.5 px-3 rounded shadow transition">
-                                                Setujui
-                                            </button>
-                                        </form>
-
-                                        {{-- 2. TERIMA BUKU (Jika status Proses Kembali) --}}
+                                            <form action="{{ route('peminjaman.update', $pinjam->idpinjam) }}" method="POST">
+                                                @csrf @method('PATCH')
+                                                <input type="hidden" name="status" value="Dipinjam">
+                                                <button class="bg-blue-600 hover:bg-blue-700 text-white text-[10px] uppercase font-bold py-1.5 px-3 rounded shadow-sm transition">
+                                                    Setujui
+                                                </button>
+                                            </form>
                                         @elseif($statusLower == 'proses kembali')
-                                        <form action="{{ route('pengembalian.store', $pinjam->idpinjam) }}" method="POST">
-                                            @csrf
-                                            <button class="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] uppercase font-bold py-1.5 px-3 rounded shadow transition">
-                                                Terima Buku
-                                            </button>
-                                        </form>
-
-                                        {{-- 3. INFO SELESAI (Jika status Kembali) --}}
-                                        @elseif($statusLower == 'kembali')
-                                        <span class="text-[10px] text-gray-400 italic">No Action Needed</span>
+                                            <form action="{{ route('pengembalian.store', $pinjam->idpinjam) }}" method="POST">
+                                                @csrf
+                                                <button class="bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] uppercase font-bold py-1.5 px-3 rounded shadow-sm transition">
+                                                    Terima Buku
+                                                </button>
+                                            </form>
+                                        @else
+                                            <span class="text-[10px] text-gray-400 italic">No Action</span>
                                         @endif
 
-                                        {{-- Tombol Hapus (Hanya untuk data yang sudah selesai atau dibatalkan) --}}
                                         <form action="{{ route('peminjaman.destroy', $pinjam->idpinjam) }}" method="POST" onsubmit="return confirm('Hapus transaksi ini secara permanen?')">
                                             @csrf @method('DELETE')
-                                            <button type="submit" class="text-rose-500 hover:text-rose-700 p-1" title="Hapus">
+                                            <button type="submit" class="text-rose-500 hover:text-rose-700 p-1.5 bg-rose-50 dark:bg-rose-900/20 rounded-md transition" title="Hapus">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                             </button>
                                         </form>
@@ -112,7 +114,7 @@
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="6" class="px-6 py-12 text-center text-gray-500 italic">
+                                <td colspan="7" class="px-6 py-12 text-center text-gray-500 italic">
                                     Belum ada data transaksi peminjaman.
                                 </td>
                             </tr>

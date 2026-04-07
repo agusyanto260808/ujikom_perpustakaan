@@ -12,10 +12,19 @@ class KelolaAkunController extends Controller
     /**
      * Menampilkan daftar semua pengguna
      */
-    public function index()
+    public function index(Request $request)
     {
-        $users = User::latest()->paginate(10);
-        return view('kelola_akun.index', compact('users'));
+        // Ambil parameter role dari URL, default ke 'siswa'
+        $role = $request->get('role', 'siswa');
+
+        // Filter user berdasarkan role yang dipilih
+        $users = \App\Models\User::where('role', $role)
+            ->where('role', '!=', 'admin') // Opsional: Sembunyikan admin dari list
+            ->latest()
+            ->paginate(10)
+            ->withQueryString(); // Penting: Agar filter role tidak hilang saat pindah page
+
+        return view('kelola_akun.index', compact('users', 'role'));
     }
 
     /**
@@ -85,18 +94,30 @@ class KelolaAkunController extends Controller
     {
         $user = User::findOrFail($id);
 
+        // 1. Validasi
         $request->validate([
             'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email,' . $user->id,
             'role' => 'required|in:admin,petugas,siswa',
             'nisn' => 'nullable|required_if:role,siswa|unique:users,nisn,' . $user->id,
+            'password' => ['nullable', 'confirmed', \Illuminate\Validation\Rules\Password::defaults()],
         ]);
 
-        $user->update([
+        // 2. Data Dasar
+        $data = [
             'name' => $request->name,
+            'email' => $request->email,
             'role' => $request->role,
             'nisn' => ($request->role === 'siswa') ? $request->nisn : null,
-        ]);
+        ];
 
-        return redirect()->route('kelola_akun.index')->with('success', 'Data diperbarui!');
+        // 3. Logika Password (Hanya update jika diisi)
+        if ($request->filled('password')) {
+            $data['password'] = Hash::make($request->password);
+        }
+
+        $user->update($data);
+
+        return redirect()->route('kelola_akun.index')->with('success', 'Akun ' . $user->name . ' berhasil diperbarui!');
     }
 }

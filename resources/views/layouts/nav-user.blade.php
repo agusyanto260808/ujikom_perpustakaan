@@ -6,6 +6,4 @@
 <x-nav-link :href="route('riwayat_peminjaman.index')" :active="request()->routeIs('riwayat_peminjaman.index')">
     {{ __('Riwayat Peminjaman') }}
 </x-nav-link>
-<x-nav-link :href="route('kembali_buku.index')" :active="request()->routeIs('kembali_buku.index')">
-    {{ __('Pengembalian Buku') }}
-</x-nav-link>
+

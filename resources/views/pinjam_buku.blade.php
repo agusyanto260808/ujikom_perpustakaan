@@ -22,7 +22,7 @@
             <h1 class="display-5 fw-bold mb-4">{{ $item->judul }}</h1>
 
             <h5 class="fw-bold border-bottom pb-2 mb-3">Detail Buku</h5>
-            <table class="table table-borderless smal">
+            <table class="table table-borderless small">
                 <tr>
                     <td class="text-muted ps-0">Penerbit</td>
                     <td class="fw-bold text-end">{{ $item->penerbit }}</td>
@@ -34,6 +34,16 @@
                 <tr>
                     <td class="text-muted ps-0">Kategori</td>
                     <td class="fw-bold text-end text-primary">Edukasi & Referensi</td>
+                </tr>
+                <tr>
+                    <td class="text-muted ps-0">Status Stok</td>
+                    <td class="fw-bold text-end">
+                        @if($item->stok > 0)
+                            <span class="badge bg-success-soft text-success border border-success px-3">Tersedia: {{ $item->stok }}</span>
+                        @else
+                            <span class="badge bg-danger text-white px-3">Habis</span>
+                        @endif
+                    </td>
                 </tr>
             </table>
 
@@ -47,33 +57,42 @@
         </div>
 
         <div class="col-md-3">
-            <div class="card card-body bg-light border-0 rounded-4 shadow-sm sticky-top" style="top: 20px;">
-                <label class="text-muted fw-bold small mb-2 text-uppercase">Ketersediaan</label>
-                <div class="d-flex align-items-center mb-4">
-                    <div class="rounded-circle me-2 {{ $item->stok > 0 ? 'bg-success' : 'bg-danger' }}" style="width: 12px; height: 12px;"></div>
-                    <span class="fw-bold {{ $item->stok > 0 ? 'text-success' : 'text-danger' }}">
-                        {{ $item->stok > 0 ? 'Stok: ' . $item->stok : 'Stok Kosong' }}
-                    </span>
-                </div>
+            <div class="card border-0 rounded-4 shadow-sm sticky-top" style="top: 20px;">
+                <div class="card-body p-4 bg-light rounded-4">
+                    <label class="text-muted fw-bold small mb-3 text-uppercase d-block">Panel Peminjaman</label>
+                    
+                    @php
+                        // Logika Keamanan: Cek apakah user masih meminjam buku lain
+                        $hasPendingReturn = App\Models\Peminjaman::where('iduser', auth()->id())
+                                            ->where('status', 'dipinjam')
+                                            ->exists();
+                        $maxDays = 7;
+                    @endphp
 
-                @if($item->stok > 0)
-                <div class="card shadow-sm border-0 rounded-4">
-                    <div class="card-body p-4">
-                         <h5 class="fw-bold mb-3">Form Peminjaman</h5>
-        
-                        <form action="{{ route('peminjaman.store') }}" method="POST">
+                    @if($hasPendingReturn)
+                        <div class="alert alert-danger border-0 shadow-sm rounded-3">
+                            <div class="d-flex">
+                                <i class="bi bi-exclamation-octagon-fill me-2"></i>
+                                <div>
+                                    <p class="fw-bold small mb-1">Peminjaman Ditolak</p>
+                                    <p class="x-small mb-0 opacity-75" style="font-size: 0.75rem;">Anda masih memiliki buku yang belum dikembalikan.</p>
+                                </div>
+                            </div>
+                        </div>
+                    @elseif($item->stok <= 0)
+                        <div class="text-center py-3">
+                            <button disabled class="btn btn-secondary w-100 py-3 fw-bold rounded-3">STOK HABIS</button>
+                            <p class="text-muted small mt-2">Cek kembali dalam beberapa hari.</p>
+                        </div>
+                    @else
+                     <form action="{{ route('peminjaman.store') }}" method="POST" onsubmit="return confirmLoan()">
     @csrf
     <input type="hidden" name="idbuku" value="{{ $item->idbuku }}">
+    
+    {{-- Input Hidden untuk Controller --}}
+    <input type="hidden" name="tanggal_kembali" id="tanggal_kembali_hidden">
 
-    <div class="mb-3">
-        <label class="form-label small fw-bold text-muted">Tanggal Kembali</label>
-        <input type="date" name="tanggal_kembali" 
-               class="form-control" 
-               value="{{ now()->addDays(7)->format('Y-m-d') }}" 
-               min="{{ now()->addDays(1)->format('Y-m-d') }}"
-               required>
-    </div>
-
+    {{-- Input Jumlah Buku --}}
     <div class="mb-4">
         <label class="form-label fw-bold small text-secondary">Jumlah Pinjam:</label>
         <div class="input-group">
@@ -84,26 +103,41 @@
         </div>
     </div>
 
-    <button type="submit" class="btn btn-primary w-100 py-2 fw-bold">
-        KONFIRMASI PINJAM
-    </button>
-
-                    </div>
-                  </div>
-            </div>
+    {{-- Input Durasi --}}
+    <div class="mb-4">
+        <label class="form-label small fw-bold text-muted">Durasi Pinjam (Hari)</label>
+        <div class="input-group mb-2">
+            <input type="number" id="days" value="7" min="1" 
+                   class="form-control fw-bold border-primary shadow-none" oninput="calculateDueDate()">
+            <button class="btn btn-primary fw-bold px-3" type="button" onclick="setDayLimit({{ $maxDays }})">MAX</button>
+        </div>
+        
+        {{-- Tampilan Estimasi untuk User --}}
+        <div id="date-preview" class="p-3 bg-white rounded border text-center shadow-sm">
+            <span class="text-muted small text-uppercase fw-bold">Tanggal Kembali:</span><br>
+            <span id="target-date" class="h5 fw-bold text-primary"></span>
+            <hr class="my-2">
+            <p class="mb-0 text-danger" style="font-size: 0.75rem;">
+                <i class="bi bi-info-circle"></i> Melewati tanggal ini akan dianggap jatuh tempo dan dikenakan denda.
+            </p>
+        </div>
     </div>
-</div>  
 
-                    </form>
-                @else
-                    <button disabled class="btn btn-secondary w-100 py-3 fw-bold rounded-3 mb-2">STOK HABIS</button>
-                @endif
+    <button type="submit" class="btn btn-success w-100 py-3 fw-bold shadow-sm rounded-3">
+        <i class="bi bi-journal-plus me-1"></i> AJUKAN PINJAMAN
+    </button>
+</form>
+                    @endif
+                </div>
             </div>
         </div>
     </div>
 </div>
-
 <script>
+function setDayLimit(max) {
+    document.getElementById('days').value = max;
+    calculateDueDate(); // Panggil fungsi hitung tanggal
+}
     function changeValue(delta) {
         const input = document.getElementById('qty');
         const max = parseInt(input.getAttribute('max'));
@@ -124,4 +158,61 @@
             errorMsg.classList.add('d-none');
         }
     }
+</script>
+<script>
+    const GLOBAL_MAX_DAYS = 7;
+
+    function setDayLimit(max) {
+        document.getElementById('days').value = max;
+        calculateDueDate();
+    }
+
+    function calculateDueDate() {
+    const daysInput = document.getElementById('days');
+    const targetText = document.getElementById('target-date');
+    const hiddenInput = document.getElementById('tanggal_kembali_hidden');
+    
+    let days = parseInt(daysInput.value);
+
+    // Jika input kosong atau bukan angka, jangan proses
+    if (isNaN(days) || days < 0) {
+        targetText.innerText = "-";
+        hiddenInput.value = "";
+        return;
+    }
+
+    const date = new Date();
+    date.setDate(date.getDate() + days);
+
+    // Tampilan User (format Indonesia)
+    const options = { day: '2-digit', month: 'long', year: 'numeric' };
+    targetText.innerText = date.toLocaleDateString('id-ID', options);
+
+    // Format untuk Controller (YYYY-MM-DD)
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    
+    // Ini yang akan dikirim ke database
+    hiddenInput.value = `${year}-${month}-${day}`;
+}
+
+    function confirmLoan() {
+        const days = parseInt(document.getElementById('days').value);
+        if (days > GLOBAL_MAX_DAYS) {
+            return confirm(`Durasi ${days} hari melebihi batas standar. Lanjutkan?`);
+        }
+        return confirm('Apakah data peminjaman sudah benar?');
+    }
+
+   document.addEventListener('DOMContentLoaded', function() {
+    const daysInput = document.getElementById('days');
+    
+    // Jalankan hitung tanggal saat pertama kali halaman dibuka
+    calculateDueDate();
+
+    // Jalankan setiap kali ada perubahan angka di input durasi
+    daysInput.addEventListener('input', calculateDueDate);
+    daysInput.addEventListener('change', calculateDueDate);
+});
 </script>

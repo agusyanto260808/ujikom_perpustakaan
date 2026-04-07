@@ -6,6 +6,7 @@ use App\Http\Controllers\PeminjamanController;
 use App\Http\Controllers\PengembalianController;
 use App\Http\Controllers\DendaController;
 use App\Http\Controllers\KelolaAkunController;
+use App\Http\Controllers\DashboardController;
 use Illuminate\Support\Facades\Route;
 
 // 1. Rute Publik
@@ -43,34 +44,37 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/riwayat-peminjaman', [PeminjamanController::class, 'riwayat'])->name('riwayat_peminjaman.index');
 
     // --- PINDAHKAN KE SINI (Agar Anggota Bisa Akses) ---
-    Route::get('/kembali-buku', [PengembalianController::class, 'kembaliBukuUser'])->name('kembali_buku.index');
-    Route::post('/kembali-buku/ajukan/{id}', [PengembalianController::class, 'ajukan'])->name('pengembalian.ajukan');
-
+    Route::get('/riwayat-peminjaman', [PeminjamanController::class, 'riwayat'])->name('riwayat_peminjaman.index');
+    Route::post('/riwayat-buku/ajukan/{id}', [PengembalianController::class, 'ajukan'])->name('pengembalian.ajukan');
 
     // ------------------------------------------------------------------
     // 3. KHUSUS ADMIN & PETUGAS (Akses Manajemen)
     // ------------------------------------------------------------------
     // --- KHUSUS ADMIN & PETUGAS ---
-    Route::group(['middleware' => function ($request, $next) {
-        if (auth()->user()->role === 'anggota') {
-            return redirect('/dashboard')->with('error', 'Anda tidak memiliki akses admin.');
-        }
-        return $next($request);
-    }], function () {
+    Route::middleware(['auth'])->group(function () {
+        Route::group(['middleware' => function ($request, $next) {
+            if (auth()->user()->role === 'anggota') {
+                return redirect('/dashboard')->with('error', 'Anda tidak memiliki akses admin.');
+            }
+            return $next($request);
+        }], function () {
 
-        Route::resource('buku', BukuController::class);
+            Route::resource('buku', BukuController::class);
 
-        // 1. Log Peminjaman Keseluruhan (Hanya List)
-        Route::get('/admin/peminjaman', [PeminjamanController::class, 'index'])->name('peminjaman.index');
+            // 1. Log Peminjaman Keseluruhan (Hanya List)
+            Route::get('/admin/peminjaman', [PeminjamanController::class, 'index'])->name('peminjaman.index');
 
-        // 2. Halaman Konfirmasi Pengembalian (Ini yang memanggil $pengembalian)
-        Route::get('/admin/konfirmasi-pengembalian', [PengembalianController::class, 'index'])->name('pengembalian.index');
-        // Route untuk memproses pengajuan dari user
-        Route::post('/kembali-buku/ajukan/{id}', [PengembalianController::class, 'ajukan'])->name('pengembalian.ajukan');
-        // 3. Proses Terima Buku (Gunakan POST agar sinkron dengan Controller @store)
-        Route::post('/pengembalian/proses/{id}', [PengembalianController::class, 'store'])->name('pengembalian.proses');
+            // 2. Halaman Konfirmasi Pengembalian (Ini yang memanggil $pengembalian)
+            Route::get('/admin/konfirmasi-pengembalian', [PengembalianController::class, 'index'])->name('pengembalian.index');
+            // Route untuk memproses pengajuan dari user
+            Route::post('/kembali-buku/ajukan/{id}', [PengembalianController::class, 'ajukan'])->name('pengembalian.ajukan');
+            Route::post('/pengembalian/store/{id}', [PengembalianController::class, 'store'])->name('pengembalian.store');
 
-        Route::get('/denda', [DendaController::class, 'index'])->name('denda.index');
-        Route::resource('kelola-akun', KelolaAkunController::class)->names('kelola_akun');
+            Route::get('/denda', [DendaController::class, 'index'])->name('denda.index');
+            Route::resource('kelola-akun', KelolaAkunController::class)->names('kelola_akun');
+            Route::get('/dashboard', [DashboardController::class, 'index'])
+                ->middleware(['auth'])
+                ->name('dashboard');
+        });
     });
 });
