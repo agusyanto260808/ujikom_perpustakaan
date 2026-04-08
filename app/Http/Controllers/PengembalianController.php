@@ -6,16 +6,18 @@ use App\Models\Buku;
 use App\Models\Peminjaman;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Auth; // <-- WAJIB TAMBAHKAN INI
+use Illuminate\Support\Facades\Auth;
+use Carbon\Carbon;
 
 class PengembalianController extends Controller
 {
     public function index()
     {
-        // Mengambil data yang sedang diajukan DAN yang sudah selesai agar ada riwayatnya
+        // Mengambil data yang sedang diajukan (proses kembali) 
+        // DAN yang sudah selesai (kembali) agar ada riwayatnya
         $pengembalian = Peminjaman::with(['user', 'buku'])
             ->whereIn('status', ['proses kembali', 'kembali'])
-            ->latest() // Urutkan dari yang terbaru
+            ->latest()
             ->paginate(10);
 
         return view('pengembalian', compact('pengembalian'));
@@ -25,73 +27,84 @@ class PengembalianController extends Controller
     {
         $pinjam = Peminjaman::findOrFail($id);
 
-        // --- PROTEKSI 1: CEK STATUS ---
-        // Jika status sudah 'kembali', jangan jalankan increment lagi!
         if ($pinjam->status === 'kembali') {
-            return redirect()->route('pengembalian.index')->with('error', 'Buku ini sudah dikembalikan sebelumnya.');
+            return redirect()->back()->with('error', 'Buku ini sudah dikembalikan.');
         }
 
         try {
-            DB::transaction(function () use ($pinjam) {
-                // UPDATE STATUS (Lakukan ini pertama)
+            $nominalDenda = $request->input('nominal_denda', 0);
+
+            // Hitung selisih hari untuk tabel denda
+            $tglJatuhTempo = \Carbon\Carbon::parse($pinjam->tanggal_jatuh_tempo);
+            $hariIni = now()->startOfDay();
+            $selisihHari = $tglJatuhTempo->diffInDays($hariIni, false);
+            $hariTerlambat = $selisihHari > 0 ? $selisihHari : 0;
+
+            DB::transaction(function () use ($pinjam, $nominalDenda, $hariTerlambat) {
+                // 1. Update status di tabel peminjaman
                 $pinjam->update(['status' => 'kembali']);
 
-                // CATAT KE TABEL PENGEMBALIAN
-                DB::table('pengembalian')->insert([
-                    'tanggalkembali' => now(),
+                // 2. Insert ke tabel pengembalian dan AMBIL ID-nya
+                $idKembali = DB::table('pengembalian')->insertGetId([
                     'idpinjam'       => $pinjam->idpinjam,
+                    'tanggalkembali' => now(),
                     'created_at'     => now(),
                     'updated_at'     => now(),
                 ]);
 
-                // KEMBALIKAN STOK
+                // 3. Insert ke tabel denda (Sesuaikan dengan screenshot kolom Anda)
+                if ($nominalDenda > 0) {
+                    DB::table('denda')->insert([
+                        'idpengembalian' => $idKembali, // Sesuai kolom di DB
+                        'jumlah'         => $nominalDenda, // Kolom 'jumlah' di DB
+                        'hari_terlambat' => $hariTerlambat,
+                        'status'         => 'Lunas',
+                        'tarif_per_hari' => 2000,
+                        'created_at'     => now(),
+                        'updated_at'     => now(),
+                    ]);
+                }
+
+                // 4. Kembalikan Stok Buku
                 if ($pinjam->buku) {
-                    // Gunakan increment sesuai JUMLAH yang dipinjam di data ini
                     $pinjam->buku->increment('stok', $pinjam->jumlah);
                 }
             });
 
-            return redirect()->route('pengembalian.index')->with('success', 'Buku berhasil diterima! Stok bertambah ' . $pinjam->jumlah);
+            return redirect()->route('pengembalian.index')
+                ->with('success', 'Buku berhasil diterima dan denda dicatat!');
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Gagal: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Gagal simpan: ' . $e->getMessage());
         }
     }
 
+    // Fungsi untuk User melihat daftar buku yang bisa dikembalikan
     public function kembaliBukuUser()
     {
-        // Menggunakan Auth::id() sekarang sudah aman karena namespace sudah di-import
         $peminjaman = Peminjaman::with('buku')
             ->where('iduser', Auth::id())
-            ->where('status', 'Dipinjam') // Pastikan case-sensitive sesuai DB Anda
+            ->where('status', 'Dipinjam')
             ->latest()
             ->get();
 
         return view('kembali_buku', compact('peminjaman'));
     }
 
+    // Fungsi untuk User mengajukan pengembalian
     public function ajukan($id)
     {
         $pinjam = Peminjaman::findOrFail($id);
 
-        // LOGIKA TAMBAHAN: Hitung denda lagi di sini untuk keamanan
-        $tgl_kembali = now();
-        $tgl_deadline = \Carbon\Carbon::parse($pinjam->tanggal_jatuh_tempo);
-        $dendaPerHari = 90000; // Sesuaikan dengan nominal denda Anda
-
-        if ($tgl_kembali->gt($tgl_deadline)) {
-            $selisih = $tgl_kembali->diffInDays($tgl_deadline);
-            $totalDenda = $selisih * $dendaPerHari;
-
-            if ($totalDenda > 0) {
-                return redirect()->back()->with('error', 'Gagal mengajukan! Anda memiliki denda yang belum dibayar.');
-            }
+        // Validasi: Jika status sudah diproses, jangan ajukan dua kali
+        if ($pinjam->status !== 'Dipinjam') {
+            return redirect()->back()->with('error', 'Status buku tidak valid untuk dikembalikan.');
         }
 
-        // Jika tidak ada denda, baru update status agar muncul di halaman admin
         $pinjam->update([
-            'status' => 'proses kembali'
+            'status' => 'proses kembali', // Huruf kecil
+            'tanggalkembali' => now()
         ]);
 
-        return redirect()->route('riwayat_peminjaman.index')->with('success', 'Berhasil diajukan! Silakan serahkan buku ke petugas.');
+        return redirect()->back()->with('success', 'Pengembalian berhasil diajukan! Silakan temui petugas untuk menyerahkan buku.');
     }
 }

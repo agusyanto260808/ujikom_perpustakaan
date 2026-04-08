@@ -1,118 +1,170 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-            {{ __('Konfirmasi Pengembalian Buku') }}
-        </h2>
+        {{-- BOOTSTRAP + ICON --}}
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+
+        <div class="d-flex justify-content-between align-items-center">
+            <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+                <i class="bi bi-box-arrow-in-down"></i> Konfirmasi Pengembalian Buku
+            </h5>
+            <span class="badge bg-success-subtle text-success border border-success-subtle px-3 rounded-pill">
+                Antrean: {{ $pengembalian->total() }}
+            </span>
+        </div>
     </x-slot>
 
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            
-            {{-- Alert Success --}}
+    {{-- Container dengan background abu muda bersih --}}
+    <div class="py-5 bg-light min-vh-100">
+        <div class="container">
+
+            {{-- ALERT --}}
             @if(session('success'))
-                <div class="mb-4 p-4 bg-emerald-100 border-l-4 border-emerald-500 text-emerald-700 rounded shadow-sm flex items-center">
-                    <svg class="w-5 h-5 mr-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
-                    <span class="text-sm font-bold">{{ session('success') }}</span>
+                <div class="alert alert-success border-0 shadow-sm d-flex align-items-center mb-4">
+                    <i class="bi bi-check-circle-fill me-2"></i>
+                    <div>{{ session('success') }}</div>
                 </div>
             @endif
 
-            {{-- Alert Error (Penting untuk menangkap SQLSTATE Error sebelumnya) --}}
-            @if(session('error'))
-                <div class="mb-4 p-4 bg-red-100 border-l-4 border-red-500 text-red-700 rounded shadow-sm flex items-center">
-                    <svg class="w-5 h-5 mr-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path></svg>
-                    <span class="text-sm font-bold">{{ session('error') }}</span>
-                </div>
-            @endif
+            {{-- CARD UTAMA --}}
+            <div class="card shadow-sm border-0 rounded-3 overflow-hidden">
 
-            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-xl sm:rounded-lg p-6">
-                <div class="mb-6 flex justify-between items-center">
-                    <h3 class="text-lg font-bold text-gray-800 dark:text-white uppercase tracking-wider">Daftar Pengajuan Kembali</h3>
+                {{-- HEADER --}}
+                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="fw-bold mb-0 text-dark">DAFTAR PENGAJUAN</h6>
+                        <small class="text-secondary">Verifikasi pengembalian buku dan denda</small>
+                    </div>
                 </div>
 
-                <div class="overflow-x-auto">
-    <table class="w-full text-sm text-left">
-        <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-300">
-            <tr>
-                <th class="px-6 py-4 w-10">No</th> {{-- Tambah Kolom No --}}
-                <th class="px-6 py-4">Data Peminjam</th>
-                <th class="px-6 py-4">Informasi Buku</th>
-                <th class="px-6 py-4 text-center">Jatuh Tempo</th>
-                <th class="px-6 py-4 text-center">Status</th>
-                <th class="px-6 py-4 text-center">Aksi Konfirmasi</th>
-            </tr>
-        </thead>
+                {{-- TABLE --}}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light text-secondary">
+                            <tr>
+                                <th class="ps-4 py-3 small text-uppercase">No</th>
+                                <th class="py-3 small text-uppercase">Peminjam</th>
+                                <th class="py-3 small text-uppercase">Buku</th>
+                                <th class="py-3 small text-uppercase text-center">Jatuh Tempo</th>
+                                <th class="py-3 small text-uppercase text-center">Status Denda</th>
+                                <th class="py-3 small text-uppercase text-center pe-4">Aksi</th>
+                            </tr>
+                        </thead>
 
-       <tbody class="divide-y divide-gray-200">
-    @forelse ($pengembalian as $item)
-    <tr class="hover:bg-gray-50 transition duration-150">
-        {{-- NOMOR URUT --}}
-        <td class="px-6 py-4 font-semibold text-gray-500">
-            {{ ($pengembalian->currentPage() - 1) * $pengembalian->perPage() + $loop->iteration }}
-        </td>
+                        <tbody class="bg-white">
+                            @forelse ($pengembalian as $item)
 
-        {{-- DATA PEMINJAM --}}
-        <td class="px-6 py-4">
-            <div class="flex flex-col">
-                <span class="font-bold text-gray-900 dark:text-gray-200">{{ $item->user->name ?? 'N/A' }}</span>
-                <span class="text-[10px] text-gray-400">ID PINJAM: #{{ $item->idpinjam }}</span>
-            </div>
-        </td>
+                            @php
+                                $tglJatuhTempo = \Carbon\Carbon::parse($item->tanggal_jatuh_tempo);
+                                $hariIni = now()->startOfDay();
+                                $selisihHari = $tglJatuhTempo->diffInDays($hariIni, false);
+                                $tarifDenda = 2000;
+                                $totalDenda = $selisihHari > 0 ? $selisihHari * $tarifDenda : 0;
+                            @endphp
 
-        {{-- INFORMASI BUKU & JUMLAH --}}
-        <td class="px-6 py-4">
-            <div class="flex flex-col">
-                <span class="font-medium text-gray-900 dark:text-gray-200">{{ $item->buku->judul ?? 'Buku Dihapus' }}</span>
-                {{-- Badge Jumlah Buku --}}
-              <div class="inline-flex items-center px-2 py-0.5 mt-1 rounded text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
+                            <tr>
+                                {{-- NO --}}
+                                <td class="ps-4 small text-muted">
+                                    {{ ($pengembalian->currentPage() - 1) * $pengembalian->perPage() + $loop->iteration }}
+                                </td>
+
+                                {{-- USER --}}
+                                <td>
+                                    <div class="fw-bold text-dark">{{ $item->user->name ?? 'N/A' }}</div>
+                                    <small class="text-muted">ID Pinjam: #{{ $item->idpinjam }}</small>
+                                </td>
+
+                                {{-- BUKU --}}
+                                <td>
+                                    <div class="fw-semibold text-dark">{{ $item->buku->judul ?? 'Buku tidak tersedia' }}</div>
+                                    <span class="badge rounded-pill bg-secondary bg-opacity-10 text-secondary small fw-normal">
                                         {{ $item->jumlah }} Buku
-                                    </div>
-            </div>
-        </td>
+                                    </span>
+                                </td>
 
-        {{-- JATUH TEMPO --}}
-        <td class="px-6 py-4 font-medium text-gray-900 dark:text-gray-200 text-center">
-            {{ \Carbon\Carbon::parse($item->tanggal_jatuh_tempo)->format('d/m/Y') }}
-        </td>
+                                {{-- JATUH TEMPO --}}
+                                <td class="text-center">
+                                    @if($selisihHari > 0)
+                                        <span class="text-danger fw-bold small">
+                                            <i class="bi bi-calendar-x me-1"></i>{{ $tglJatuhTempo->format('d/m/Y') }}
+                                        </span>
+                                    @else
+                                        <span class="text-secondary small">
+                                            {{ $tglJatuhTempo->format('d/m/Y') }}
+                                        </span>
+                                    @endif
+                                </td>
+
+                                {{-- DENDA --}}
+                                <td class="text-center">
+                                    @if($totalDenda > 0)
+                                        <div class="badge bg-danger bg-opacity-10 text-danger px-3 py-2 rounded-pill">
+                                            <span class="fw-bold">Rp {{ number_format($totalDenda, 0, ',', '.') }}</span>
+                                            <br>
+                                            <small style="font-size: 0.7rem;">Telat {{ $selisihHari }} Hari</small>
+                                        </div>
+                                    @else
+                                        <span class="badge bg-success-subtle text-success px-3 rounded-pill fw-normal">
+                                            Bebas Denda
+                                        </span>
+                                    @endif
+                                </td>
+
+                                {{-- AKSI --}}
+                              <td class="text-center pe-4">
+    <div class="d-flex justify-content-center gap-2">
+        @php 
+            // Ambil status, kecilkan semua, dan hapus spasi liar
+            $statusSekarang = trim(strtolower($item->status)); 
+        @endphp
+
+        @if($statusSekarang == 'proses kembali')
+            <form action="{{ route('pengembalian.store', $item->idpinjam) }}" method="POST">
+                @csrf
+                <input type="hidden" name="nominal_denda" value="{{ $totalDenda }}">
+                <button type="submit" class="btn btn-sm btn-success shadow-sm px-3 rounded-pill fw-bold">
+                    <i class="bi bi-check-lg"></i> Terima Buku
+                </button>
+            </form>
+
+        {{-- Gunakan in_array untuk jaga-jaga jika ada status 'kembali' atau 'selesai' --}}
+        @elseif(in_array($statusSekarang, ['kembali', 'selesai']))
+            <span class="badge rounded-pill bg-success-subtle text-success px-3 py-2 border border-success-subtle">
+                <i class="bi bi-check-all me-1"></i> Selesai
+            </span>
+        @else
+            <span class="badge rounded-pill bg-light text-secondary border px-3 py-2 fw-normal">
+                {{ ucfirst($item->status) }}
+            </span>
+        @endif
         
-        {{-- STATUS --}}
-        <td class="px-6 py-4 text-center">
-            @if($item->status == 'proses kembali')
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200 animate-pulse">
-                    Menunggu Konfirmasi
-                </span>
-            @else
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 border border-emerald-200">
-                    Sudah Kembali
-                </span>
-            @endif
-        </td>
+        <form action="{{ route('peminjaman.destroy', $item->idpinjam) }}" method="POST" onsubmit="return confirm('Hapus riwayat ini?')">
+            @csrf
+            @method('DELETE')
+            <button type="submit" class="btn btn-sm btn-outline-danger border-0">
+                <i class="bi bi-trash"></i>
+            </button>
+        </form>
+    </div>
+</td>   
+                            </tr>
 
-        {{-- AKSI --}}
-        <td class="px-6 py-4 text-center">
-            @if($item->status == 'proses kembali')
-                <form action="{{ route('pengembalian.store', $item->idpinjam) }}" method="POST">
-                    @csrf 
-                    <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded shadow-sm text-xs font-bold transition transform active:scale-95">
-                        TERIMA BUKU
-                    </button>
-                </form>
-            @else
-                <div class="flex flex-col items-center">
-                    <span class="text-gray-400 text-[10px] italic">Diterima pada:</span>
-                    <span class="text-gray-500 text-xs font-semibold">{{ $item->updated_at->format('d/m/Y H:i') }}</span>
+                            @empty
+                            <tr>
+                                <td colspan="6" class="text-center py-5 text-muted">
+                                    <i class="bi bi-clipboard-check fs-1 opacity-25"></i>
+                                    <p class="mt-2">Tidak ada pengajuan pengembalian yang perlu diproses</p>
+                                </td>
+                            </tr>
+                            @endforelse
+
+                        </tbody>
+                    </table>
                 </div>
-            @endif
-        </td>
-    </tr>
-    @empty
-    {{-- Bagian empty tetap sama --}}
-    @endforelse
-</tbody>
-    </table>
-</div>
 
+                {{-- PAGINATION --}}
                 @if($pengembalian->hasPages())
-                    <div class="mt-6">
+                    <div class="card-footer bg-white py-3 border-top">
                         {{ $pengembalian->links() }}
                     </div>
                 @endif

@@ -18,7 +18,7 @@ class Peminjaman extends Model
         'idbuku',
         'tanggal_pinjam',
         'tanggal_jatuh_tempo',
-        'tanggal_kembali', // TAMBAHKAN INI
+        'tanggalkembali', // TAMBAHKAN INI
         'status',
         'jumlah',
         'denda'
@@ -39,9 +39,9 @@ class Peminjaman extends Model
     }
 
     // TAMBAHKAN KODE INI
+    // App\Models\Peminjaman.php
     public function pengembalian()
     {
-        // Asumsi: Nama modelnya 'Pengembalian' dan foreign key-nya 'idpinjam'
         return $this->hasOne(Pengembalian::class, 'idpinjam', 'idpinjam');
     }
 }

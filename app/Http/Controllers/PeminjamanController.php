@@ -14,7 +14,9 @@ class PeminjamanController extends Controller
 
     public function index()
     {
-        $peminjaman = Peminjaman::with(['user', 'buku'])->paginate(10);
+        $peminjaman = Peminjaman::with(['user', 'buku'])
+            ->latest('idpinjam')
+            ->paginate(10);
 
         // Ganti 'pengembalian' menjadi nama file blade peminjaman Anda
         return view('peminjaman', compact('peminjaman'));
@@ -25,7 +27,7 @@ class PeminjamanController extends Controller
     protected $casts = [
         'tanggal_pinjam' => 'date',
         'tanggal_jatuh_tempo' => 'date',
-        'tanggal_kembali' => 'date',
+        'tanggalkembali' => 'date',
     ];
 
 
@@ -33,7 +35,7 @@ class PeminjamanController extends Controller
     {
         $request->validate([
             'idbuku' => 'required|exists:buku,idbuku',
-            'tanggal_kembali' => 'required|date|after:today',
+            'tanggalkembali' => 'required|date|after:today',
             'jumlah' => 'required|integer|min:1',
         ]);
 
@@ -53,7 +55,7 @@ class PeminjamanController extends Controller
                 'iduser' => auth()->id(),
                 'idbuku' => $request->idbuku,
                 'tanggal_pinjam' => now(),
-                'tanggal_jatuh_tempo' => $request->tanggal_kembali,
+                'tanggal_jatuh_tempo' => $request->tanggalkembali,
                 'status' => 'Menunggu', // User menunggu persetujuan admin
                 'jumlah' => $request->jumlah,
             ]);
@@ -74,7 +76,7 @@ class PeminjamanController extends Controller
                 $peminjaman->buku->increment('stok', $peminjaman->jumlah);
 
                 // Set tanggal pengembalian realita adalah hari ini
-                $peminjaman->tanggal_kembali = now()->format('Y-m-d');
+                $peminjaman->tanggalkembali = now()->format('Y-m-d');
 
                 // --- HITUNG DENDA OTOMATIS ---
                 $jatuhTempo = \Carbon\Carbon::parse($peminjaman->tanggal_jatuh_tempo);

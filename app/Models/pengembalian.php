@@ -15,7 +15,7 @@ class Pengembalian extends Model
 
     protected $fillable = [
         'idpinjam',
-        'tanggal_kembali',
+        'tanggalkembali',
         'denda',
     ];
 
@@ -40,5 +40,10 @@ class Pengembalian extends Model
             'idpinjam', // Local key di tabel pengembalian
             'idbuku'    // Local key di tabel peminjaman
         );
+    }
+    public function denda()
+    {
+        // Sesuaikan foreign key dengan kolom 'idpengembalian' di screenshot
+        return $this->hasOne(Denda::class, 'idpengembalian', 'idkembali');
     }
 }

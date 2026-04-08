@@ -1,27 +1,27 @@
-<x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
+<x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')" class="text-black fw-bold">
     {{ __('Dashboard') }}
 </x-nav-link>
 
-<x-nav-link :href="route('buku.index')" :active="request()->routeIs('buku.index')">
+<x-nav-link :href="route('buku.index')" :active="request()->routeIs('buku.index')" class="text-black fw-bold">
     {{ __('Buku') }}
 </x-nav-link>
 
-<x-nav-link :href="route('peminjaman.index')" :active="request()->routeIs('peminjaman.index')">
+<x-nav-link :href="route('peminjaman.index')" :active="request()->routeIs('peminjaman.index')" class="text-black fw-bold">
     {{ __('Peminjaman') }}
 </x-nav-link>
 
-<x-nav-link :href="route('pengembalian.index')" :active="request()->routeIs('pengembalian.index')">
+<x-nav-link :href="route('pengembalian.index')" :active="request()->routeIs('pengembalian.index')" class="text-black fw-bold">
     {{ __('Pengembalian') }}
 </x-nav-link>
-
+{{-- 
 <x-nav-link :href="route('denda.index')" :active="request()->routeIs('denda.index')">
     {{ __('Denda') }}
-</x-nav-link>
+</x-nav-link> --}}
 
-<div class="hidden sm:flex sm:items-center sm:ms-6">
-    <x-dropdown align="right" width="48">
+<div class="hidden sm:flex sm:items-center sm:ms-6 ">
+    <x-dropdown align="right" width="48" class="text-black fw-bold">
         <x-slot name="trigger">
-            <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 hover:text-gray-700 dark:hover:text-gray-300 focus:outline-none transition ease-in-out duration-150">
+            <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-black-500 dark:text-black-400 bg-white dark:bg-black-800 hover:text-black-700 dark:hover:text-black-300 focus:outline-none transition ease-in-out duration-150">
                 <div>Kelola Akun</div>
 
                 <div class="ms-1">

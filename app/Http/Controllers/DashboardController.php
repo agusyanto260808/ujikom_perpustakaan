@@ -10,24 +10,55 @@ use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
-    // app/Http/Controllers/DashboardController.php
-
     public function index()
     {
-        // Mengambil data dari database
-        $totalBuku = \App\Models\Buku::count();
-        $totalUser = \App\Models\User::count();
-        $totalPinjam = \App\Models\Peminjaman::count();
+        // ======================
+        // STATISTIK (Data Nyata)
+        // ======================
+        $totalBuku = Buku::count();
 
-        // Data untuk Chart
-        $peminjamanPerBulan = \App\Models\Peminjaman::selectRaw('MONTHNAME(tanggal_pinjam) as bulan, COUNT(*) as total')
-            ->groupBy('bulan')
+        // Menghitung hanya user dengan role anggota
+        $totalUser = User::where('role', 'anggota')->count();
+
+        // Total yang sedang dipinjam (Aktif)
+        // Termasuk status 'dipinjam' dan 'proses kembali' agar data sinkron dengan dashboard
+        $totalPinjam = Peminjaman::whereIn('status', ['dipinjam', 'proses kembali'])->count();
+
+        // Total yang sudah beres (Riwayat)
+        $totalKembali = Peminjaman::whereIn('status', ['kembali', 'selesai', 'lunas'])->count();
+
+        // ======================
+        // DATA CHART (Urut Bulan)
+        // ======================
+        $peminjamanPerBulan = Peminjaman::selectRaw('
+                MONTH(tanggal_pinjam) as bulan_angka,
+                MONTHNAME(tanggal_pinjam) as bulan,
+                COUNT(*) as total
+            ')
+            ->groupBy('bulan_angka', 'bulan')
+            ->orderBy('bulan_angka')
             ->get();
 
         $labels = $peminjamanPerBulan->pluck('bulan');
         $values = $peminjamanPerBulan->pluck('total');
 
-        // Pastikan variabel $totalBuku ada di dalam compact()
-        return view('dashboard', compact('totalBuku', 'totalUser', 'totalPinjam', 'labels', 'values'));
+        // ======================
+        // LOGIKA ROLE VIEW
+        // ======================
+        // Kita simpan datanya dalam satu array agar tidak menulis ulang compact dua kali
+        $data = [
+            'totalBuku'    => $totalBuku,
+            'totalUser'    => $totalUser,
+            'totalPinjam'  => $totalPinjam,
+            'totalKembali' => $totalKembali,
+            'labels'       => $labels,
+            'values'       => $values,
+        ];
+
+        if (auth()->user()->role === 'anggota') {
+            return view('dashboard_user', $data);
+        }
+
+        return view('dashboard', $data);
     }
 }

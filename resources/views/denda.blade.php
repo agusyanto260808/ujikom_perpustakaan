@@ -102,16 +102,23 @@
                                     </td>
 
                                     {{-- Aksi --}}
-                                    <td class="px-6 py-6 bg-gray-50/50 dark:bg-gray-700/30 rounded-r-2xl border-y border-r border-gray-100 dark:border-gray-700 text-right group-hover:bg-gray-100 transition-colors">
-                                        <form action="{{ route('pengembalian.store', $item->idpinjam) }}" method="POST" 
-                                              onsubmit="return confirm('{{ $terlambat > 0 ? 'Denda Rp ' . number_format($total_denda) . ' sudah dibayar oleh ' . $item->nama_peminjam . '?' : 'Selesaikan pengembalian buku?' }}')">
-                                            @csrf
-                                            <button type="submit" class="inline-flex items-center px-5 py-2 bg-emerald-500 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-emerald-600 shadow-lg shadow-emerald-100 transition-all active:scale-95">
-                                                <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
-                                                Selesai
-                                            </button>
-                                        </form>
-                                    </td>
+                                   <td class="px-6 py-6 bg-gray-50/50 dark:bg-gray-700/30 rounded-r-2xl border-y border-r border-gray-100 dark:border-gray-700 text-right group-hover:bg-gray-100 transition-colors">
+    <form action="{{ route('pengembalian.store', $item->idpinjam) }}" method="POST" 
+          onsubmit="return confirm('{{ $terlambat > 0 ? 'Konfirmasi: Denda sebesar Rp ' . number_format($total_denda) . ' telah DIBAYAR TUNAI oleh ' . $item->user->name . '?' : 'Selesaikan pengembalian buku ini?' }}')">
+        @csrf
+        
+        {{-- Kirim data denda ke controller agar bisa disimpan --}}
+        <input type="hidden" name="denda" value="{{ $total_denda }}">
+        <input type="hidden" name="terlambat" value="{{ $terlambat > 0 ? $terlambat : 0 }}">
+
+        <button type="submit" class="inline-flex items-center px-5 py-2 bg-emerald-500 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-emerald-600 shadow-lg shadow-emerald-100 transition-all active:scale-95 group/btn">
+            <svg class="w-4 h-4 mr-1.5 transition-transform group-hover/btn:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+            </svg>
+            Selesaikan
+        </button>
+    </form>
+</td>
                                 </tr>
                                 @empty
                                 <tr>

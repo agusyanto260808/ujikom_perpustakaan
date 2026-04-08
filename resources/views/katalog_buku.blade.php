@@ -1,116 +1,122 @@
 <x-app-layout>
+    {{-- Slot Header tetap menggunakan struktur Breeze/Laravel agar sinkron dengan layout utama --}}
     <x-slot name="header">
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-        <h2 class="h4 font-weight-bold text-white mb-0">
-            📚 {{ __('Katalog Buku') }}
+        <h2 class="h4 fw-bold text-dark mb-0">
+            {{ __('Katalog Perpustakaan') }}
         </h2>
+        
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+        <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
     </x-slot>
 
-    <div class="container py-5">
-        
-        <div class="row mb-5 justify-content-center">
-            <div class="col-md-6">
-                <form method="GET" action="{{ route('katalog_buku.index') }}" class="input-group shadow-sm">
-                    <input type="text" name="search" class="form-control border-0 py-3 ps-4 bg-secondary text-white placeholder-light" 
-                           placeholder="Cari judul buku atau penulis..." value="{{ request('search') }}"
-                           style="border-radius: 50px 0 0 50px;">
-                    <button class="btn btn-primary px-4" type="submit" style="border-radius: 0 50px 50px 0;">
-                        <i class="bi bi-search"></i> Cari
-                    </button>
-                </form>
-            </div>
-        </div>
-
-        <div class="row row-cols-2 row-cols-md-3 row-cols-lg-5 row-cols-xl-6 g-4">
-            @forelse($buku as $item)
-                <div class="col">
-                    <div class="card h-100 border-secondary bg-dark shadow-sm hover-card transition" style="border-radius: 15px; overflow: hidden;">
-                        
-                        <a href="{{ route('katalog.show', $item->idbuku) }}" class="position-relative d-block overflow-hidden" style="aspect-ratio: 3/4;">
-                            <img src="{{ $item->gambar ? asset('storage/'.$item->gambar) : asset('images/default.png') }}" 
-                                 class="card-img-top w-100 h-100 object-fit-cover transition-transform" 
-                                 alt="{{ $item->judul }}">
-                            
-                            <div class="position-absolute inset-0 bg-black bg-opacity-10 transition-opacity"></div>
-
-                            <span class="position-absolute top-0 start-0 m-2 badge bg-primary shadow-sm small">
-                                <small>ID</small>
+    <div class="bg-light min-vh-100 py-5">
+        <div class="container">
+            
+            <div class="row mb-5 justify-content-center">
+                <div class="col-md-8 col-lg-6">
+                    <form method="GET" action="{{ route('katalog_buku.index') }}">
+                        <div class="input-group shadow-sm bg-white rounded-pill p-1 border">
+                            <span class="input-group-text bg-transparent border-0 ps-4 text-muted">
+                                <i class="bi bi-search"></i>
                             </span>
-
-                            <button class="position-absolute top-0 end-0 m-2 btn btn-link text-danger p-0 shadow-none">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-heart-fill" viewBox="0 0 16 16">
-                                  <path fill-rule="evenodd" d="M8 1.314C12.438-3.248 23.534 4.735 8 15-7.534 4.736 3.562-3.248 8 1.314z"/>
-                                </svg>
+                            <input type="text" name="search" class="form-control border-0 py-2 shadow-none bg-transparent" 
+                                   placeholder="Cari judul, penulis, atau genre..." value="{{ request('search') }}">
+                            <button class="btn btn-primary rounded-pill px-4 fw-bold" type="submit">
+                                Temukan
                             </button>
-                        </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
 
-                        <div class="card-body p-3">
-                            <p class="text-secondary small mb-1 text-uppercase text-truncate" style="font-size: 0.7rem;">
-                                {{ $item->penulis }}
-                            </p>
-                            <h6 class="card-title fw-bold text-white mb-2 text-limit-2" style="font-size: 0.9rem; line-height: 1.2; height: 2.2rem;">
-                                <a href="{{ route('katalog.show', $item->idbuku) }}" class="text-decoration-none text-white hover-blue">
-                                    {{ $item->judul }}
-                                </a>
-                            </h6>
-                            
-                            <div class="mt-auto">
-                                <p class="fw-bold text-info mb-1" style="font-size: 0.9rem;">
-                                    Stok: {{ $item->stok ?? 0 }}
-                                </p>
-                                <span class="badge bg-success bg-opacity-25 text-success border border-success rounded-pill px-2" style="font-size: 0.7rem;">
-                                    Tersedia
-                                </span>
+            <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 g-4">
+                @forelse($buku as $item)
+                    <div class="col">
+                        <div class="card h-100 border-0 shadow-sm book-card">
+                            <div class="position-relative overflow-hidden" style="aspect-ratio: 2/3;">
+                                <img src="{{ $item->gambar ? asset('storage/'.$item->gambar) : asset('images/default.png') }}" 
+                                     class="card-img-top w-100 h-100 object-fit-cover rounded-top-3" alt="{{ $item->judul }}">
+                                
+                                <div class="book-overlay position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-dark bg-opacity-50 opacity-0 transition-all">
+                                    <a href="{{ route('katalog.show', $item->idbuku) }}" class="btn btn-light btn-sm rounded-pill px-3 fw-bold shadow-sm">
+                                        Detail
+                                    </a>
+                                </div>
+
+                                @if($item->stok > 0)
+                                    <span class="badge position-absolute top-0 start-0 m-2 bg-success-subtle text-success border border-success-subtle small">Tersedia</span>
+                                @else
+                                    <span class="badge position-absolute top-0 start-0 m-2 bg-danger-subtle text-danger border border-danger-subtle small">Habis</span>
+                                @endif
+                            </div>
+
+                            <div class="card-body p-3">
+                                <small class="text-primary fw-bold text-uppercase d-block mb-1" style="font-size: 10px; letter-spacing: 0.5px;">
+                                    {{ Str::limit($item->penulis, 15) }}
+                                </small>
+                                <h6 class="card-title mb-3 h6 fw-bold">
+                                    <a href="{{ route('katalog.show', $item->idbuku) }}" class="text-decoration-none text-dark">
+                                        {{ $item->judul }}
+                                    </a>
+                                </h6>
+                                
+                                <div class="d-flex justify-content-between align-items-end pt-2 border-top">
+                                    <div class="lh-sm">
+                                        <small class="text-muted d-block fw-bold" style="font-size: 8px;">STOK</small>
+                                        <span class="text-primary fw-bold h6 mb-0">{{ $item->stok ?? 0 }}</span>
+                                    </div>
+                                    <small class="text-muted small">#{{ $item->idbuku }}</small>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            @empty
-                <div class="col-12 text-center py-5">
-                    <p class="text-secondary">Buku tidak ditemukan.</p>
-                </div>
-            @endforelse
-        </div>
+                @empty
+                    <div class="col-12 text-center py-5">
+                        <i class="bi bi-journal-x display-1 text-secondary opacity-25"></i>
+                        <p class="mt-3 fs-5 text-muted">Koleksi belum tersedia.</p>
+                    </div>
+                @endforelse
+            </div>
 
-        <div class="d-flex justify-content-center mt-5">
-            {{ $buku->links() }}
+            <div class="d-flex justify-content-center mt-5">
+                {{ $buku->links('pagination::bootstrap-5') }}
+            </div>
         </div>
     </div>
 
     <style>
-        /* Agar menyatu dengan background gelap aplikasi Anda */
-        body { background-color: #0f172a; } /* Sesuaikan dengan warna background gelap Anda */
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
 
-        .hover-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.4) !important;
-            border-color: #3b82f6 !important; /* Warna biru saat di-hover */
+        /* Custom Hover Effect */
+        .book-card {
+            border-radius: 12px;
+            transition: transform 0.2s ease-in-out;
         }
-        .hover-card img:hover {
-            transform: scale(1.1);
+        
+        .book-card:hover {
+            transform: translateY(-5px);
         }
-        .transition {
+
+        .book-card:hover .book-overlay {
+            opacity: 1 !important;
+        }
+
+        .transition-all {
             transition: all 0.3s ease;
         }
-        .transition-transform {
-            transition: transform 0.5s ease;
+
+        /* Badge Customization to match Tailwind look */
+        .badge {
+            font-size: 10px;
+            text-transform: uppercase;
+            padding: 4px 8px;
         }
-        .text-limit-2 {
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-        .hover-blue:hover {
-            color: #3b82f6 !important;
-        }
+
+        /* Fix image focus */
         .object-fit-cover {
             object-fit: cover;
         }
-        .placeholder-light::placeholder {
-            color: #ccc;
-        }
     </style>
-    
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
 </x-app-layout>
