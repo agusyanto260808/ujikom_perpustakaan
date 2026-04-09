@@ -29,32 +29,31 @@
             <div class="card mb-4 shadow-sm border-0 rounded-3">
                 <div class="card-body p-4">
                     <form method="GET" action="{{ route('buku.index') }}" class="row g-3">
-                        
-                        <div class="col-md-9">
-                            <div class="input-group">
-                                <span class="input-group-text bg-light border-0">
-                                    <i class="bi bi-search text-muted"></i>
-                                </span>
-                                <input type="text" name="search"
-                                    value="{{ request('search') }}"
-                                    class="form-control border-0 bg-light"
-                                    placeholder="Cari judul, penulis, atau ISBN...">
-                            </div>
-                        </div>
+    <div class="col-md-6">
+        <div class="input-group">
+            <span class="input-group-text bg-light border-0"><i class="bi bi-search text-muted"></i></span>
+            <input type="text" name="search" value="{{ request('search') }}" class="form-control border-0 bg-light" placeholder="Cari buku...">
+        </div>
+    </div>
 
-                        <div class="col-md-3 d-flex gap-2">
-                            <button class="btn btn-primary w-100 fw-bold">
-                                Cari
-                            </button>
+    <div class="col-md-3">
+        <select name="kategori_id" class="form-select border-0 bg-light">
+            <option value="">-- Semua Kategori --</option>
+            @foreach($kategoris as $k)
+                <option value="{{ $k->id }}" {{ request('kategori_id') == $k->id ? 'selected' : '' }}>
+                    {{ $k->nama_kategori }}
+                </option>
+            @endforeach
+        </select>
+    </div>
 
-                            @if(request('search'))
-                            <a href="{{ route('buku.index') }}" class="btn btn-outline-secondary">
-                                <i class="bi bi-arrow-clockwise"></i>
-                            </a>
-                            @endif
-                        </div>
-
-                    </form>
+    <div class="col-md-3 d-flex gap-2">
+        <button class="btn btn-primary w-100 fw-bold">Cari</button>
+        @if(request('search') || request('kategori_id'))
+            <a href="{{ route('buku.index') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-clockwise"></i></a>
+        @endif
+    </div>
+</form>
                 </div>
             </div>
 
@@ -123,18 +122,31 @@
                                         <span class="badge rounded-pill bg-success-subtle text-success px-3">{{ $item->stok }}</span>
                                     @endif
                                 </td>
-                                <td class="text-center pe-4">
-                                    <div class="d-flex justify-content-center gap-1">
-                                        <a href="{{ route('buku.edit', $item->idbuku) }}"
-                                           class="btn btn-sm btn-light border text-warning shadow-sm">
-                                            <i class="bi bi-pencil-square"></i>
-                                        </a>
-                                        <button onclick="confirmDelete({{ $item->idbuku }}, '{{ $item->judul }}')"
-                                                class="btn btn-sm btn-light border text-danger shadow-sm">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </div>
-                                </td>
+                                {{-- Ganti bagian <tbody> pada kolom Aksi dengan ini --}}
+<td class="text-center pe-4">
+    <div class="d-flex justify-content-center gap-1">
+        {{-- TOMBOL DETAIL --}}
+        <a href="{{ route('buku.show', $item->idbuku) }}"
+           class="btn btn-sm btn-light border text-primary shadow-sm"
+           title="Lihat Detail">
+            <i class="bi bi-eye"></i>
+        </a>
+
+        {{-- TOMBOL EDIT --}}
+        <a href="{{ route('buku.edit', $item->idbuku) }}"
+           class="btn btn-sm btn-light border text-warning shadow-sm"
+           title="Edit Buku">
+            <i class="bi bi-pencil-square"></i>
+        </a>
+
+        {{-- TOMBOL HAPUS --}}
+        <button onclick="confirmDelete({{ $item->idbuku }}, '{{ $item->judul }}')"
+                class="btn btn-sm btn-light border text-danger shadow-sm"
+                title="Hapus Buku">
+            <i class="bi bi-trash"></i>
+        </button>
+    </div>
+</td>
                             </tr>
                             @empty
                             <tr>
@@ -158,3 +170,33 @@
         </div>
     </div>
 </x-app-layout>
+
+{{-- Letakkan di bagian bawah sebelum </x-app-layout> --}}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    function confirmDelete(id, judul) {
+        Swal.fire({
+            title: 'Hapus Buku?',
+            text: "Apakah Anda yakin ingin menghapus buku '" + judul + "'?",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#6e7881',
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Buat form dinamis untuk submit DELETE request
+                let form = document.createElement('form');
+                form.action = "{{ url('buku') }}/" + id;
+                form.method = 'POST';
+                form.innerHTML = `
+                    @csrf
+                    @method('DELETE')
+                `;
+                document.body.appendChild(form);
+                form.submit();
+            }
+        })
+    }
+</script>

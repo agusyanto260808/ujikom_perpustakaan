@@ -2,68 +2,76 @@
 
 namespace App\Http\Controllers;
 
+
 use Illuminate\Http\Request;
 use App\Models\Peminjaman;
 use App\Models\Buku;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class PeminjamanController extends Controller
 {
 
 
-    public function index()
+    public function index(Request $request)
     {
-        $peminjaman = Peminjaman::with(['user', 'buku'])
-            ->latest('idpinjam')
-            ->paginate(10);
+        // Memulai query dengan eager loading untuk user dan buku
+        $query = Peminjaman::with(['user', 'buku']);
 
-        // Ganti 'pengembalian' menjadi nama file blade peminjaman Anda
+        // 1. Filter berdasarkan Bulan (Jika ada input)
+        if ($request->filled('bulan')) {
+            // CRITICAL: Paksa konversi ke integer (int) untuk menghindari error Carbon
+            $bulan = (int) $request->bulan;
+            $query->whereMonth('tanggal_pinjam', $bulan);
+        }
+
+        // 2. Filter berdasarkan Tahun
+        if ($request->filled('tahun')) {
+            $tahun = (int) $request->tahun;
+            $query->whereYear('tanggal_pinjam', $tahun);
+        } else {
+            // Default menampilkan tahun sekarang jika tidak ada filter tahun
+            $query->whereYear('tanggal_pinjam', date('Y'));
+        }
+
+        // Mengambil data dengan pagination dan mempertahankan parameter filter di URL
+        $peminjaman = $query->latest('idpinjam')->paginate(10);
+
         return view('peminjaman', compact('peminjaman'));
     }
-
-
-    // Tambahkan baris ini
-    protected $casts = [
-        'tanggal_pinjam' => 'date',
-        'tanggal_jatuh_tempo' => 'date',
-        'tanggalkembali' => 'date',
-    ];
 
 
     public function store(Request $request)
     {
         $request->validate([
             'idbuku' => 'required|exists:buku,idbuku',
-            'tanggalkembali' => 'required|date|after:today',
+            'tanggal_kembali' => 'required|date|after:today', // Sesuaikan name-nya
             'jumlah' => 'required|integer|min:1',
         ]);
 
         $buku = Buku::findOrFail($request->idbuku);
 
-        // --- PROTEKSI: CEK STOK DULU ---
         if ($buku->stok < $request->jumlah) {
-            return redirect()->back()->with('error', 'Maaf, stok buku tidak mencukupi.');
+            return redirect()->back()->with('error', 'Stok tidak mencukupi');
         }
 
-        \DB::transaction(function () use ($request, $buku) {
-            // 1. Kurangi stok buku SEKARANG (saat dipesan) agar tidak dipinjam orang lain
+        DB::transaction(function () use ($request, $buku) {
             $buku->decrement('stok', $request->jumlah);
 
-            // 2. Buat data peminjaman
             Peminjaman::create([
                 'iduser' => auth()->id(),
                 'idbuku' => $request->idbuku,
                 'tanggal_pinjam' => now(),
-                'tanggal_jatuh_tempo' => $request->tanggalkembali,
-                'status' => 'Menunggu', // User menunggu persetujuan admin
+                'tanggal_jatuh_tempo' => $request->tanggal_kembali, // Gunakan name yang benar
+                'status' => 'Menunggu',
                 'jumlah' => $request->jumlah,
             ]);
         });
 
-        return redirect()->route('riwayat_peminjaman.index')->with('success', 'Permintaan pinjam berhasil dikirim! Stok buku telah dikurangi.');
+        return redirect()->route('riwayat_peminjaman.index')->with('success', 'Berhasil!');
     }
-
     public function update(Request $request, $id)
     {
         return \DB::transaction(function () use ($request, $id) {
@@ -72,24 +80,24 @@ class PeminjamanController extends Controller
             $statusLama = $peminjaman->status;
 
             // --- LOGIKA SAAT BUKU DIKEMBALIKAN ---
-            if ($statusBaru == 'Kembali' && $statusLama != 'Kembali') {
-                $peminjaman->buku->increment('stok', $peminjaman->jumlah);
+            // if ($statusBaru == 'Kembali' && $statusLama != 'Kembali') {
+            //     $peminjaman->buku->increment('stok', $peminjaman->jumlah);
 
-                // Set tanggal pengembalian realita adalah hari ini
-                $peminjaman->tanggalkembali = now()->format('Y-m-d');
+            //     // Set tanggal pengembalian realita adalah hari ini
+            //     $peminjaman->tanggalkembali = now()->format('Y-m-d');
 
-                // --- HITUNG DENDA OTOMATIS ---
-                $jatuhTempo = \Carbon\Carbon::parse($peminjaman->tanggal_jatuh_tempo);
-                $hariIni = now();
+            //     // --- HITUNG DENDA OTOMATIS ---
+            //     $jatuhTempo = \Carbon\Carbon::parse($peminjaman->tanggal_jatuh_tempo);
+            //     $hariIni = now();
 
-                if ($hariIni->gt($jatuhTempo)) {
-                    $selisihHari = $hariIni->diffInDays($jatuhTempo);
-                    $dendaPerHari = 2000; // Contoh: Rp 2.000 per hari
-                    $peminjaman->denda = $selisihHari * $dendaPerHari;
-                } else {
-                    $peminjaman->denda = 0;
-                }
-            }
+            //     if ($hariIni->gt($jatuhTempo)) {
+            //         $selisihHari = $hariIni->diffInDays($jatuhTempo);
+            //         $dendaPerHari = 2000; // Contoh: Rp 2.000 per hari
+            //         $peminjaman->denda = $selisihHari * $dendaPerHari;
+            //     } else {
+            //         $peminjaman->denda = 0;
+            //     }
+            // }
 
             // --- LOGIKA JIKA ADMIN MENOLAK ---
             if ($statusBaru == 'Ditolak' && $statusLama == 'Menunggu') {
@@ -98,6 +106,7 @@ class PeminjamanController extends Controller
 
             $peminjaman->status = $statusBaru;
             $peminjaman->save();
+
 
             return back()->with('success', "Status diperbarui. " . ($peminjaman->denda > 0 ? "User dikenakan denda Rp " . number_format($peminjaman->denda, 0, ',', '.') : ""));
         });

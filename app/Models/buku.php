@@ -6,9 +6,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class Buku extends Model
 {
+    // Nama tabel di database Anda
     protected $table = 'buku';
 
-    // TAMBAHKAN BARIS INI
+    // Primary key custom Anda
     protected $primaryKey = 'idbuku';
 
     protected $fillable = [
@@ -18,6 +19,13 @@ class Buku extends Model
         'tahun',
         'stok',
         'gambar',
-        'iduser'
+        'iduser',
+        'kategori_id'
     ];
+
+    // Relasi ke Model Kategori
+    public function kategori()
+    {
+        return $this->belongsTo(Kategori::class, 'kategori_id');
+    }
 }

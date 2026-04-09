@@ -2,34 +2,37 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Peminjaman;
+use App\Models\Denda;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class DendaController extends Controller
 {
-    /**
-     * Menampilkan halaman laporan denda dengan pagination
-     */
     public function index()
     {
-        // Ganti ::all() menjadi ::paginate()
-        // Angka 10 berarti 10 data per halaman
-        $pengembalian = Peminjaman::with(['user', 'buku'])
+        // Mengambil data denda beserta relasi pengembalian -> peminjaman -> user & buku
+        $dataDenda = Denda::with(['pengembalian.peminjaman.user', 'pengembalian.peminjaman.buku'])
             ->latest()
             ->paginate(10);
 
-        // Melempar variabel $pengembalian ke view denda.blade.php
-        return view('denda', compact('pengembalian'));
+        return view('denda', compact('dataDenda'));
     }
 
-    /**
-     * Update/Reset denda
-     */
     public function destroy($id)
     {
-        $denda = Peminjaman::findOrFail($id);
-        $denda->update(['denda' => 0]);
+        DB::table('denda')->where('iddenda', $id)->delete();
+        return redirect()->back()->with('success', 'Riwayat denda berhasil dihapus.');
+    }
 
-        return redirect()->back()->with('success', 'Riwayat denda berhasil diperbarui.');
+    public function konfirmasiLunas($id)
+    {
+        DB::table('denda')
+            ->where('iddenda', $id)
+            ->update([
+                'status' => 'Lunas',
+                'updated_at' => now()
+            ]);
+
+        return redirect()->back()->with('success', 'Pembayaran denda telah dikonfirmasi!');
     }
 }

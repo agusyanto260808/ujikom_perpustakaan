@@ -7,6 +7,7 @@ use App\Http\Controllers\PengembalianController;
 use App\Http\Controllers\DendaController;
 use App\Http\Controllers\KelolaAkunController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\LaporanController;
 use Illuminate\Support\Facades\Route;
 
 // 1. Rute Publik
@@ -39,7 +40,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/riwayat-peminjaman', [PeminjamanController::class, 'riwayat'])->name('riwayat_peminjaman.index');
 
 
-    Route::post('/riwayat-buku/ajukan/{id}', [PengembalianController::class, 'ajukan'])->name('pengembalian.ajukan');
+
 
     // ------------------------------------------------------------------
 
@@ -59,4 +60,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/denda', [DendaController::class, 'index'])->name('denda.index');
     Route::resource('kelola-akun', KelolaAkunController::class)->names('kelola_akun');
+    // Cara yang benar
+    Route::get('/laporan', [LaporanController::class, 'index'])->name('laporan.index');
+    // Tambahkan di dalam grup middleware auth
+    Route::post('/denda/konfirmasi/{id}', [DendaController::class, 'konfirmasiLunas'])->name('denda.konfirmasi');
 });

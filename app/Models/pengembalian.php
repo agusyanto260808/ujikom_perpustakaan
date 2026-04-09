@@ -4,6 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Peminjaman;
+use App\Models\Buku;    
+
 
 class Pengembalian extends Model
 {
@@ -16,7 +19,6 @@ class Pengembalian extends Model
     protected $fillable = [
         'idpinjam',
         'tanggalkembali',
-        'denda',
     ];
 
     /**

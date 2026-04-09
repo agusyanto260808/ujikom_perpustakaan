@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Buku;
+use App\Models\Kategori; // TAMBAHKAN INI agar tidak error
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -10,31 +11,30 @@ class BukuController extends Controller
 {
     public function index(Request $request)
     {
-        $search = $request->input('search');
+        $kategoris = Kategori::all();
 
-        // Query untuk mengambil data buku
-        $query = Buku::query();
+        $query = Buku::with('kategori');
 
-        // Jika ada pencarian, filter berdasarkan judul atau penulis
-        if ($search) {
-            $query->where('judul', 'like', "%$search%")
-                ->orWhere('penulis', 'like', "%$search%");
+        // Filter Search
+        if ($request->search) {
+            $query->where('judul', 'like', "%{$request->search}%");
         }
 
-        $buku = $query->latest()->paginate(12);
-
-        // CEK: Jika yang login adalah 'anggota', arahkan ke tampilan katalog perpustakaan
-        if (auth()->user()->role === 'anggota') {
-            return view('katalog_buku', compact('buku'));
+        // Filter Kategori
+        if ($request->kategori_id) {
+            $query->where('kategori_id', $request->kategori_id);
         }
 
-        // Jika admin/petugas, arahkan ke tabel kelola buku (tampilan Master Buku)
-        return view('buku.index', compact('buku'));
+        $buku = $query->paginate(10);
+
+        return view('buku.index', compact('buku', 'kategoris'));
     }
 
     public function create()
     {
-        return view('buku.create');
+        // Jangan lupa kirim kategoris ke view create agar dropdown bisa muncul
+        $kategoris = Kategori::all();
+        return view('buku.create', compact('kategoris'));
     }
 
     public function store(Request $request)
@@ -45,7 +45,8 @@ class BukuController extends Controller
             'penerbit' => 'required',
             'tahun' => 'required|numeric',
             'stok' => 'required|numeric',
-            'gambar' => 'required|image'
+            'gambar' => 'required|image',
+            'kategori_id' => 'required' // Tambahkan validasi kategori
         ]);
 
         if ($request->hasFile('gambar')) {
@@ -53,15 +54,23 @@ class BukuController extends Controller
         }
 
         $data['iduser'] = auth()->id();
-        \App\Models\Buku::create($data);
+        Buku::create($data); // Gunakan Buku (huruf kapital)
 
         return redirect()->route('buku.index')->with('success', 'Buku berhasil disimpan');
     }
 
-    public function update(Request $request, $id)
-
+    public function edit($id)
     {
-        $buku = buku::findOrFail($id);
+        // Sesuaikan dengan primary key kamu 'idbuku'
+        $buku = Buku::where('idbuku', $id)->firstOrFail();
+        $kategoris = Kategori::all();
+
+        return view('buku.edit', compact('buku', 'kategoris'));
+    }
+
+    public function update(Request $request, $id)
+    {
+        $buku = Buku::where('idbuku', $id)->firstOrFail();
 
         $data = $request->validate([
             'judul' => 'required',
@@ -69,6 +78,7 @@ class BukuController extends Controller
             'penerbit' => 'required',
             'tahun' => 'required|numeric',
             'stok' => 'required|numeric',
+            'kategori_id' => 'required'
         ]);
 
         if ($request->hasFile('gambar')) {
@@ -79,24 +89,22 @@ class BukuController extends Controller
 
         return redirect()->route('buku.index')->with('success', 'Data berhasil diupdate');
     }
-    // Tambahkan ini di dalam class BukuController
-    public function edit($id)
-    {
-        // Cari data buku berdasarkan ID (sesuaikan primary key Anda, misal: idbuku)
-        $buku = \App\Models\Buku::where('idbuku', $id)->firstOrFail();
 
-        // Kirim data buku ke view edit
-        return view('buku.edit', compact('buku'));
-    }
     public function show($id)
     {
-        // Mencari berdasarkan idbuku karena primary key sudah diganti
         $item = Buku::where('idbuku', $id)->firstOrFail();
-        return view('pinjam_buku', compact('item')); // Sesuaikan dengan nama file blade kamu
+
+        if (auth()->user()->role === 'anggota') {
+            return view('pinjam_buku', compact('item'));
+        }
+
+        return view('buku.detail', compact('item'));
     }
+
     public function destroy($id)
     {
-        buku::findOrFail($id)->delete();
+        // Gunakan idbuku jika itu primary key-nya
+        Buku::where('idbuku', $id)->firstOrFail()->delete();
         return back()->with('success', 'Data dihapus');
     }
 }

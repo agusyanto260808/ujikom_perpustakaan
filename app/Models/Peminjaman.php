@@ -18,30 +18,45 @@ class Peminjaman extends Model
         'idbuku',
         'tanggal_pinjam',
         'tanggal_jatuh_tempo',
-        'tanggalkembali', // TAMBAHKAN INI
         'status',
         'jumlah',
         'denda'
     ];
 
-    public function buku()
-    {
-        return $this->belongsTo(Buku::class, 'idbuku', 'idbuku');
-    }
-    // app/Models/Peminjaman.php
     protected $casts = [
         'tanggal_pinjam' => 'date',
         'tanggal_jatuh_tempo' => 'date',
     ];
+
+    // 1. Relasi ke Buku (Cukup SATU saja)
+    public function buku()
+    {
+        return $this->belongsTo(Buku::class, 'idbuku', 'idbuku');
+    }
+
+    // 2. Relasi ke User
     public function user()
     {
         return $this->belongsTo(User::class, 'iduser', 'id');
     }
 
-    // TAMBAHKAN KODE INI
-    // App\Models\Peminjaman.php
+    // 3. Relasi ke Pengembalian
     public function pengembalian()
     {
         return $this->hasOne(Pengembalian::class, 'idpinjam', 'idpinjam');
+    }
+
+    // 4. Relasi ke Denda (melalui Pengembalian)
+    public function denda_relation()
+    {
+        // Saya beri nama denda_relation agar tidak bentrok dengan KOLOM 'denda' di tabel peminjaman
+        return $this->hasOneThrough(
+            Denda::class,
+            Pengembalian::class,
+            'idpinjam',       // FK di pengembalian
+            'idpengembalian', // FK di denda
+            'idpinjam',       // Local key di peminjaman
+            'idkembali'       // Local key di pengembalian
+        );
     }
 }
