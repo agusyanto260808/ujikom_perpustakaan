@@ -35,14 +35,15 @@
             </button>
         </x-slot>
 
-        <x-slot name="content">
-    {{-- Link untuk Akun User/Siswa --}}
-    <x-dropdown-link :href="route('kelola_akun.index', ['role' => 'anggota'])">
+    <x-slot name="content">
+    {{-- Gunakan kelas standar Tailwind untuk memastikan teks terlihat --}}
+    <x-dropdown-link :href="route('kelola_akun.index', ['role' => 'anggota'])" 
+        class="font-bold text-gray-700 hover:bg-gray-100">
         {{ __('Akun User') }}
     </x-dropdown-link>
 
-    {{-- Link untuk Akun Petugas --}}
-    <x-dropdown-link :href="route('kelola_akun.index', ['role' => 'petugas'])">
+    <x-dropdown-link :href="route('kelola_akun.index', ['role' => 'petugas'])" 
+        class="font-bold text-gray-700 hover:bg-gray-100">
         {{ __('Akun Petugas') }}
     </x-dropdown-link>
 </x-slot>

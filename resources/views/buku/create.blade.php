@@ -80,6 +80,22 @@
                                             <div class="invalid-feedback">{{ $message }}</div>
                                         @enderror
                                     </div>
+                                    {{-- Kategori Buku --}}
+<div class="col-md-6">
+    <label for="kategori_id" class="form-label fw-semibold small text-muted text-uppercase">Kategori Buku</label>
+    <select id="kategori_id" name="kategori_id" 
+        class="form-select form-select-lg @error('kategori_id') is-invalid @enderror" required>
+        <option value="" selected disabled>Pilih Kategori...</option>
+        @foreach($kategoris as $k)
+            <option value="{{ $k->id }}" {{ old('kategori_id') == $k->id ? 'selected' : '' }}>
+                {{ $k->nama_kategori }}
+            </option>
+        @endforeach
+    </select>
+    @error('kategori_id')
+        <div class="invalid-feedback">{{ $message }}</div>
+    @enderror
+</div>
 
                                     {{-- Cover Buku --}}
                                     <div class="col-md-6">

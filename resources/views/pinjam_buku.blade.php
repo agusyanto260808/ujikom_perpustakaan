@@ -104,24 +104,28 @@
     </div>
 
     {{-- Input Durasi --}}
-    <div class="mb-4">
-        <label class="form-label small fw-bold text-muted">Durasi Pinjam (Hari)</label>
-        <div class="input-group mb-2">
-            <input type="number" id="days" value="7" min="1" 
-                   class="form-control fw-bold border-primary shadow-none" oninput="calculateDueDate()">
-            <button class="btn btn-primary fw-bold px-3" type="button" onclick="setDayLimit({{ $maxDays }})">MAX</button>
-        </div>
-        
-        {{-- Tampilan Estimasi untuk User --}}
-        <div id="date-preview" class="p-3 bg-white rounded border text-center shadow-sm">
-            <span class="text-muted small text-uppercase fw-bold">Tanggal Kembali:</span><br>
-            <span id="target-date" class="h5 fw-bold text-primary"></span>
-            <hr class="my-2">
-            <p class="mb-0 text-danger" style="font-size: 0.75rem;">
-                <i class="bi bi-info-circle"></i> Melewati tanggal ini akan dianggap jatuh tempo dan dikenakan denda.
-            </p>
-        </div>
+    {{-- Input Durasi (Dropdown) --}}
+<div class="mb-4">
+    <label class="form-label small fw-bold text-muted">Durasi Pinjam</label>
+    <div class="mb-2">
+        <select id="days" class="form-select fw-bold border-primary shadow-none" onchange="calculateDueDate()">
+            <option value="3" selected>3 Hari </option>
+            <option value="7" selected>7 Hari </option>
+            <option value="14">14 Hari </option>
+            <option value="30">30 Hari </option>
+        </select>
     </div>
+    
+    {{-- Tampilan Estimasi untuk User --}}
+    <div id="date-preview" class="p-3 bg-white rounded border text-center shadow-sm">
+        <span class="text-muted small text-uppercase fw-bold">Tanggal Kembali:</span><br>
+        <span id="target-date" class="h5 fw-bold text-primary"></span>
+        <hr class="my-2">
+        <p class="mb-0 text-danger" style="font-size: 0.75rem;">
+            <i class="bi bi-info-circle"></i> Melewati tanggal ini akan dianggap jatuh tempo dan dikenakan denda.
+        </p>
+    </div>
+</div>
 
     <button type="submit" class="btn btn-success w-100 py-3 fw-bold shadow-sm rounded-3">
         <i class="bi bi-journal-plus me-1"></i> AJUKAN PINJAMAN

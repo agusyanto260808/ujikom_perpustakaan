@@ -28,10 +28,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // --- FITUR SISWA / ANGGOTA ---
-    // --- FITUR SISWA / ANGGOTA ---
-    Route::get('/katalog', [BukuController::class, 'index'])->name('katalog_buku.index');
+    // Ubah method dari 'index' menjadi 'katalog'
+    Route::get('/katalog', [BukuController::class, 'katalog'])->name('katalog_buku.index');
     Route::get('/katalog/{id}', [BukuController::class, 'show'])->name('katalog.show');
+
+    // ... rute lainnya ..
 
     // Proses Simpan Pinjaman & Riwayat
     Route::post('/peminjaman/store', [PeminjamanController::class, 'store'])->name('peminjaman.store');

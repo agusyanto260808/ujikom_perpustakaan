@@ -4,28 +4,33 @@ namespace App\Http\Controllers;
 
 use App\Models\Peminjaman;
 use App\Models\Buku;
-use App\Models\Pengembalian;
-use App\Models\Denda;
 use Illuminate\Http\Request;
+use Carbon\Carbon;
 
 class LaporanController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Peminjaman::with(['user', 'buku', 'pengembalian.denda']);
+        // Menggunakan nama variabel $bulan agar konsisten
+        $bulan = $request->get('bulan', date('m'));
+        $tahun = $request->get('tahun', date('Y'));
 
-        // Filter Bulan & Tahun
-        if ($request->filled('bulan')) {
-            $query->whereMonth('tanggal_pinjam', (int)$request->bulan);
-        }
-        if ($request->filled('tahun')) {
-            $query->whereYear('tanggal_pinjam', (int)$request->tahun);
-        } else {
-            $query->whereYear('tanggal_pinjam', date('Y'));
-        }
+        $laporan = Peminjaman::with(['user', 'buku', 'pengembalian.denda'])
+            ->where(function ($query) use ($bulan, $tahun) {
+                $query->whereMonth('tanggal_pinjam', $bulan)
+                    ->whereYear('tanggal_pinjam', $tahun);
+            })
+            ->orWhereHas('pengembalian', function ($query) use ($bulan, $tahun) {
+                // Menggunakan tanggalkembali sesuai struktur DB Anda
+                $query->whereMonth('tanggalkembali', $bulan)
+                    ->whereYear('tanggalkembali', $tahun);
+            })
+            ->get();
 
-        $laporan = $query->latest()->get();
+        $buku_all = Buku::all();
+        $nama_bulan = Carbon::create()->month((int)$bulan)->translatedFormat('F');
 
-        return view('laporan', compact('laporan'));
+        // Pastikan 'bulan' (bukan bulan_angka) ada di sini
+        return view('laporan', compact('laporan', 'buku_all', 'bulan', 'nama_bulan', 'tahun'));
     }
 }

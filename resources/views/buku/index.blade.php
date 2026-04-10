@@ -5,10 +5,10 @@
         <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 
         <div class="d-flex justify-content-between align-items-center">
-            <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+           <h2 class="h4 fw-bold text-dark mb-0 mt-5">
                 <i class="bi bi-book"></i> Daftar Buku
-            </h5>
-            <small class="text-muted">
+            </h2>
+            <small class="text-muted mt-5">
                 Total: <strong>{{ $buku->total() }}</strong>
             </small>
         </div>
@@ -77,7 +77,7 @@
                     <table class="table table-hover align-middle mb-0">
                         <thead class="bg-light text-secondary">
                             <tr>
-                                <th class="ps-4 py-3 small text-uppercase">ID</th>
+                                <th class="ps-4 py-3 small text-uppercase">No</th>
                                 <th class="py-3 small text-uppercase">Sampul</th>
                                 <th class="py-3 small text-uppercase">Informasi Buku</th>
                                 <th class="py-3 small text-uppercase">Penerbit</th>
@@ -90,7 +90,7 @@
                         <tbody class="bg-white">
                             @forelse ($buku as $item)
                             <tr>
-                                <td class="ps-4 small text-muted">#{{ $item->idbuku }}</td>
+                                <td class="ps-4 small text-muted">{{ $item->idbuku }}</td>
                                 <td>
                                     @if($item->gambar)
                                         <img src="{{ asset('storage/' . $item->gambar) }}"

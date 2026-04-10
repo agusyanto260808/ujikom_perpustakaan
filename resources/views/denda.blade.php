@@ -5,10 +5,10 @@
         <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 
         <div class="d-flex justify-content-between align-items-center">
-            <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+            <h2 class="h4 fw-bold text-dark mb-0 mt-5">
                 <i class="bi bi-cash-stack"></i> Riwayat Denda Keterlambatan
-            </h5>
-            <small class="text-muted">
+            </h2>
+            <small class="text-muted mt-5">
                 Total Riwayat: <strong>{{ $dataDenda->total() }}</strong>
             </small>
         </div>

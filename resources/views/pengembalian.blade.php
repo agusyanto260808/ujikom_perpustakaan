@@ -5,10 +5,10 @@
         <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 
         <div class="d-flex justify-content-between align-items-center">
-            <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+            <h2 class="h4 fw-bold text-dark mb-0 mt-5">
                 <i class="bi bi-box-arrow-in-down"></i> Konfirmasi Pengembalian Buku
-            </h5>
-            <span class="badge bg-success-subtle text-success border border-success-subtle px-3 rounded-pill">
+            </h2>
+            <span class="badge bg-success-subtle text-success border border-success-subtle px-3 rounded-pill mt-5">
                 Antrean: {{ $pengembalian->total() }}
             </span>
         </div>
@@ -154,12 +154,7 @@
                         </span>
                     @endif
                     
-                    <form action="{{ route('peminjaman.destroy', $item->idpinjam) }}" method="POST" onsubmit="return confirm('Hapus riwayat ini?')">
-                        @csrf @method('DELETE')
-                        <button type="submit" class="btn btn-sm btn-outline-danger border-0">
-                            <i class="bi bi-trash"></i>
-                        </button>
-                    </form>
+                    
                 </div>
             </td>   
         </tr>

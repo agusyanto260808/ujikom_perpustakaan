@@ -4,10 +4,10 @@
         <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 
         <div class="d-flex justify-content-between align-items-center">
-            <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
+           <h2 class="h4 fw-bold text-dark mb-0 mt-5">
                 <i class="bi bi-arrow-left-right"></i> Kelola Transaksi Peminjaman
-            </h5>
-            <small class="text-muted">
+            </h2>
+            <small class="text-muted mt-5">
                 Total Transaksi: <strong>{{ $peminjaman->total() }}</strong>
             </small>
         </div>
@@ -138,32 +138,35 @@
                                 </td>
 
                                 <td class="text-center pe-4">
-                                    <div class="d-flex justify-content-center gap-2">
-                                        @if($statusLower == 'menunggu')
-    {{-- Tombol Setujui --}}
-    <form action="{{ route('peminjaman.update', $pinjam->idpinjam) }}" method="POST">
-        @csrf @method('PATCH')
-        <input type="hidden" name="status" value="Dipinjam">
-        <button class="btn btn-sm btn-primary">Setujui</button>
-    </form>
-@elseif($statusLower == 'dipinjam')
-    {{-- Tombol Kembalikan (Ini yang akan memicu hitung denda) --}}
-    <form action="{{ route('peminjaman.update', $pinjam->idpinjam) }}" method="POST">
-        @csrf @method('PATCH')
-        <input type="hidden" name="status" value="Kembali">
-        <button class="btn btn-sm btn-success">Selesaikan Pinjaman</button>
-    </form>
-@endif
+    <div class="d-flex justify-content-center gap-2">
+        @if($statusLower == 'menunggu')
+            {{-- Tombol Setujui untuk status Menunggu --}}
+            <form action="{{ route('peminjaman.update', $pinjam->idpinjam) }}" method="POST">
+                @csrf @method('PATCH')
+                <input type="hidden" name="status" value="Dipinjam">
+                <button class="btn btn-sm btn-primary fw-bold px-3 shadow-sm">
+                    <i class="bi bi-check2-circle me-1"></i> Setujui
+                </button>
+            </form>
 
-                                        <form action="{{ route('peminjaman.destroy', $pinjam->idpinjam) }}" method="POST" 
-                                              onsubmit="return confirm('Hapus transaksi ini?')">
-                                            @csrf @method('DELETE')
-                                            <button class="btn btn-sm btn-light border text-danger shadow-sm">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        </form>
-                                    </div>
-                                </td>
+        @elseif($statusLower == 'dipinjam')
+            {{-- Tombol Selesaikan untuk status sedang Dipinjam --}}
+            <form action="{{ route('peminjaman.update', $pinjam->idpinjam) }}" method="POST">
+                @csrf @method('PATCH')
+                <input type="hidden" name="status" value="Kembali">
+                <button class="btn btn-sm btn-success fw-bold px-3 shadow-sm">
+                    <i class="bi bi-arrow-return-left me-1"></i> Selesaikan
+                </button>
+            </form>
+
+        @elseif($statusLower == 'kembali' || $statusLower == 'selesai')
+            {{-- Tampilan teks jika transaksi sudah selesai (bukan tombol) --}}
+            <span class="text-success small fw-bold">
+                <i class="bi bi-check-all"></i> Selesai
+            </span>
+        @endif
+    </div>
+</td>
                             </tr>
                             @empty
                             <tr>

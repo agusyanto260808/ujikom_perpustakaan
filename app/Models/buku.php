@@ -6,10 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Buku extends Model
 {
-    // Nama tabel di database Anda
     protected $table = 'buku';
-
-    // Primary key custom Anda
     protected $primaryKey = 'idbuku';
 
     protected $fillable = [
@@ -23,7 +20,26 @@ class Buku extends Model
         'kategori_id'
     ];
 
-    // Relasi ke Model Kategori
+    // 1. Relasi ke Peminjaman (Penting untuk hitung stok tersedia)
+    public function peminjamans()
+    {
+        return $this->hasMany(Peminjaman::class, 'idbuku', 'idbuku');
+    }
+
+    // 2. Accessor Stok Tersedia
+    // Ini akan dipanggil di Blade dengan $item->stok_tersedia
+    public function getStokTersediaAttribute()
+    {
+        // Hitung buku yang sedang dipinjam (status selain 'Kembali')
+        $sedangDipinjam = $this->peminjamans()
+            ->where('status', '!=', 'Kembali')
+            ->count();
+
+        $sisa = $this->stok - $sedangDipinjam;
+
+        return $sisa < 0 ? 0 : $sisa; // Pastikan tidak minus
+    }
+
     public function kategori()
     {
         return $this->belongsTo(Kategori::class, 'kategori_id');

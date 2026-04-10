@@ -1,9 +1,10 @@
 <x-app-layout>
-    <x-slot name="header">
-        <h2 class="h4 fw-bold text-dark mb-0">
-            <i class="bi bi-speedometer2 me-2"></i>{{ __('Admin Dashboard') }}
-        </h2>
-    </x-slot>
+<x-slot name="header">
+    {{-- Tambahkan mt-4 atau mt-5 di sini --}}
+    <h2 class="h4 fw-bold text-dark mb-0 mt-5">
+        <i class="bi bi-speedometer2 me-2"></i>{{ __('Admin Dashboard') }}
+    </h2>
+</x-slot>
 
     <div class="py-5 bg-light min-vh-100">
         <div class="container">
