@@ -11,26 +11,38 @@ class LaporanController extends Controller
 {
     public function index(Request $request)
     {
-        // Menggunakan nama variabel $bulan agar konsisten
         $bulan = $request->get('bulan', date('m'));
         $tahun = $request->get('tahun', date('Y'));
 
-        $laporan = Peminjaman::with(['user', 'buku', 'pengembalian.denda'])
-            ->where(function ($query) use ($bulan, $tahun) {
-                $query->whereMonth('tanggal_pinjam', $bulan)
-                    ->whereYear('tanggal_pinjam', $tahun);
-            })
-            ->orWhereHas('pengembalian', function ($query) use ($bulan, $tahun) {
-                // Menggunakan tanggalkembali sesuai struktur DB Anda
-                $query->whereMonth('tanggalkembali', $bulan)
+        // DATA UNTUK TAB PEMINJAMAN
+        $laporan = Peminjaman::with(['user', 'buku', 'pengembalian'])
+            ->whereMonth('tanggal_pinjam', $bulan)
+            ->whereYear('tanggal_pinjam', $tahun)
+            ->get();
+
+        // DATA UNTUK TAB PENGEMBALIAN & DENDA
+        $laporanKembali = Peminjaman::with(['user', 'buku', 'pengembalian.denda'])
+            ->whereHas('pengembalian', function ($q) use ($bulan, $tahun) {
+                $q->whereMonth('tanggalkembali', $bulan)
                     ->whereYear('tanggalkembali', $tahun);
             })
             ->get();
 
+        // MENGHITUNG TOTAL BUKU YANG DIPINJAM (Berdasarkan data yang dikembalikan)
+        // Pastikan kolom di database Anda namanya 'jumlah'
+        $total_buku_kembali = $laporanKembali->sum('jumlah');
+
         $buku_all = Buku::all();
         $nama_bulan = Carbon::create()->month((int)$bulan)->translatedFormat('F');
 
-        // Pastikan 'bulan' (bukan bulan_angka) ada di sini
-        return view('laporan', compact('laporan', 'buku_all', 'bulan', 'nama_bulan', 'tahun'));
+        return view('laporan', compact(
+            'laporan',
+            'laporanKembali',
+            'buku_all',
+            'bulan',
+            'nama_bulan',
+            'tahun',
+            'total_buku_kembali' // Kirim variabel ini ke view
+        ));
     }
 }

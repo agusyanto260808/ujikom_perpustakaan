@@ -47,16 +47,16 @@ class Peminjaman extends Model
     }
 
     // 4. Relasi ke Denda (melalui Pengembalian)
+    // Pastikan bagian ini di model Peminjaman kamu tetap seperti ini:
     public function denda_relation()
     {
-        // Saya beri nama denda_relation agar tidak bentrok dengan KOLOM 'denda' di tabel peminjaman
         return $this->hasOneThrough(
             Denda::class,
             Pengembalian::class,
-            'idpinjam',       // FK di pengembalian
-            'idpengembalian', // FK di denda
-            'idpinjam',       // Local key di peminjaman
-            'idkembali'       // Local key di pengembalian
+            'idpinjam',       // Foreign key di tabel pengembalian
+            'idpengembalian', // Foreign key di tabel denda
+            'idpinjam',       // Local key di tabel peminjaman
+            'idkembali'       // Local key di tabel pengembalian
         );
     }
 }

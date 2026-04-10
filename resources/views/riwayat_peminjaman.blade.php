@@ -104,7 +104,7 @@
             @if($status == 'dipinjam')
                 <form action="{{ route('pengembalian.ajukan', $pinjam->idpinjam) }}" method="POST">
                     @csrf
-                    <button type="submit" class="btn btn-primary btn-action w-100 shadow-sm">Kembalikan</button>
+                    <button type="submit" class="btn btn-primary btn-action w-100 shadow-sm">Ajukan Kembali</button>
                 </form>
             @elseif($status == 'proses kembali')
                 <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle badge-status rounded-pill">Diproses Petugas</span>

@@ -35,16 +35,19 @@
                     <td class="text-muted ps-0">Kategori</td>
                     <td class="fw-bold text-end text-primary">Edukasi & Referensi</td>
                 </tr>
-                <tr>
-                    <td class="text-muted ps-0">Status Stok</td>
-                    <td class="fw-bold text-end">
-                        @if($item->stok > 0)
-                            <span class="badge bg-success-soft text-success border border-success px-3">Tersedia: {{ $item->stok }}</span>
-                        @else
-                            <span class="badge bg-danger text-white px-3">Habis</span>
-                        @endif
-                    </td>
-                </tr>
+               {{-- Status Stok di Detail --}}
+<tr>
+    <td class="text-muted ps-0">Status Stok</td>
+    <td class="fw-bold text-end">
+        @if($item->stok_tersedia > 0)
+            <span class="badge bg-success-soft text-success border border-success px-3">
+                Tersedia: {{ $item->stok_tersedia }}
+            </span>
+        @else
+            <span class="badge bg-danger text-white px-3">Habis (Sedang Dipinjam)</span>
+        @endif
+    </td>
+</tr>
             </table>
 
             <div class="mt-4">
@@ -93,15 +96,22 @@
     <input type="hidden" name="tanggal_kembali" id="tanggal_kembali_hidden">
 
     {{-- Input Jumlah Buku --}}
-    <div class="mb-4">
-        <label class="form-label fw-bold small text-secondary">Jumlah Pinjam:</label>
-        <div class="input-group">
-            <button class="btn btn-outline-secondary" type="button" onclick="changeValue(-1)">-</button>
-            <input type="number" name="jumlah" id="qty" value="1" min="1" max="{{ $item->stok }}" 
-                   class="form-control text-center fw-bold">
-            <button class="btn btn-outline-secondary" type="button" onclick="changeValue(1)">+</button>
-        </div>
+    {{-- Input Jumlah Buku --}}
+<div class="mb-4">
+    <label class="form-label fw-bold small text-secondary">Jumlah Pinjam:</label>
+    <div class="input-group">
+        <button class="btn btn-outline-secondary" type="button" onclick="changeValue(-1)">-</button>
+        {{-- Gunakan stok_tersedia sebagai batas maksimal --}}
+        <input type="number" name="jumlah" id="qty" value="1" min="1" 
+               max="{{ $item->stok_tersedia }}" 
+               oninput="validateQty(this)"
+               class="form-control text-center fw-bold shadow-none">
+        <button class="btn btn-outline-secondary" type="button" onclick="changeValue(1)">+</button>
     </div>
+    <div id="qty-error" class="text-danger small mt-1 d-none">
+        <i class="bi bi-exclamation-circle"></i> Stok tersedia hanya {{ $item->stok_tersedia }}.
+    </div>
+</div>
 
     {{-- Input Durasi --}}
     {{-- Input Durasi (Dropdown) --}}
@@ -138,6 +148,56 @@
     </div>
 </div>
 <script>
+    function changeValue(delta) {
+        const input = document.getElementById('qty');
+        const errorMsg = document.getElementById('qty-error');
+        // Ambil nilai maksimal dari atribut max yang dikirim server
+        const max = parseInt(input.getAttribute('max')) || 0;
+        let current = parseInt(input.value) || 0;
+        
+        let newValue = current + delta;
+
+        if (newValue >= 1 && newValue <= max) {
+            input.value = newValue;
+            errorMsg.classList.add('d-none');
+        } else if (newValue > max) {
+            // Jika tombol + ditekan tapi sudah mentok stok
+            input.value = max;
+            errorMsg.classList.remove('d-none');
+        }
+    }
+
+    function validateQty(input) {
+        const max = parseInt(input.getAttribute('max')) || 0;
+        const errorMsg = document.getElementById('qty-error');
+        let value = parseInt(input.value);
+
+        if (isNaN(value) || value < 1) {
+            input.value = 1;
+            errorMsg.classList.add('d-none');
+        } else if (value > max) {
+            // Jika siswa mengetik angka lebih besar dari stok tersedia
+            input.value = max;
+            errorMsg.classList.remove('d-none');
+            
+            // Hilangkan pesan error setelah 3 detik
+            setTimeout(() => {
+                errorMsg.classList.add('d-none');
+            }, 3000);
+        } else {
+            errorMsg.classList.add('d-none');
+        }
+    }
+
+    function confirmLoan() {
+        const qty = document.getElementById('qty').value;
+        const bookTitle = "{{ $item->judul }}";
+        
+        return confirm(`Apakah Anda yakin ingin meminjam ${qty} buku "${bookTitle}"?`);
+    }
+</script>
+<script>
+
 function setDayLimit(max) {
     document.getElementById('days').value = max;
     calculateDueDate(); // Panggil fungsi hitung tanggal

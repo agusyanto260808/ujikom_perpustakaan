@@ -16,17 +16,13 @@
     </head>
     <body class="font-sans antialiased">
     <div class="min-h-screen bg-gray-100">
-        {{-- Navbar tetap fixed di paling atas --}}
-        @include('layouts.navigation')
+        
+        
 
-        {{-- Gunakan wrapper dengan padding top yang pas (pt-16 atau pt-20) --}}
-        {{-- Navbar Anda tingginya h-16, jadi pt-16 adalah batas minimal agar tidak tertutup --}}
-        <div class="pt-16"> 
-            
+        <div class="relative z-10 pt-16"> 
             @isset($header)
                 <header class="bg-white shadow">
                     <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-                        {{-- Judul Admin Dashboard ada di sini --}}
                         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
                             {{ $header }}
                         </h2>
@@ -37,9 +33,10 @@
             <main> 
                 {{ $slot }}
             </main>
-
         </div>
-        
+        <div class="fixed top-0 left-0 right-0 z-[9999]">
+            @include('layouts.navigation')
+        </div>
         @include('partials.footer')
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

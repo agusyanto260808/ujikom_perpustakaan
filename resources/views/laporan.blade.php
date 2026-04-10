@@ -50,11 +50,6 @@ smkn3banjar@ymail.com | Telp: (0265)2734141</p>
                         </button>
                     </li>
                     <li class="nav-item">
-                        <button class="nav-link fw-bold small" data-bs-toggle="pill" data-bs-target="#pills-denda">
-                            <i class="bi bi-cash-stack me-1"></i> Denda
-                        </button>
-                    </li>
-                    <li class="nav-item">
                         <button class="nav-link fw-bold small" data-bs-toggle="pill" data-bs-target="#pills-buku">
                             <i class="bi bi-journals me-1"></i> Inventaris Buku
                         </button>
@@ -126,21 +121,28 @@ smkn3banjar@ymail.com | Telp: (0265)2734141</p>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {{-- Di Tab Peminjaman, pastikan isinya seperti ini --}}
-@foreach($laporan as $item)
-<tr>
-    <td class="text-center">{{ $loop->iteration }}</td>
-    <td>{{ $item->user->name }}</td>
-    <td>{{ $item->buku->judul }}</td>
-    <td class="text-center">{{ $item->tanggal_pinjam->format('d/m/Y') }}</td>
-    <td class="text-center">
-        <span class="badge {{ $item->status == 'Kembali' ? 'bg-success' : 'bg-warning' }}">
-            {{ $item->status }}
-        </span>
-    </td>
-</tr>
-@endforeach
-                                        </tbody>
+    @forelse($laporan as $item)
+    <tr class="text-center">
+        <td>{{ $loop->iteration }}</td>
+        <td class="text-start fw-bold">{{ $item->user->name }}</td>
+        <td class="text-start">{{ $item->buku->judul }}</td>
+        <td>{{ $item->tanggal_pinjam->format('d/m/Y') }}</td>
+        <td>
+            @if($item->status == 'Menunggu')
+                <span class="badge border text-warning border-warning">Menunggu</span>
+            @elseif($item->status == 'Dipinjam')
+                <span class="badge border text-primary border-primary">Sedang Dipinjam</span>
+            @else
+                <span class="badge border text-success border-success">Selesai</span>
+            @endif
+        </td>
+    </tr>
+    @empty
+    <tr>
+        <td colspan="5" class="text-center py-4 text-muted">Tidak ada transaksi peminjaman periode ini.</td>
+    </tr>
+    @endforelse
+</tbody>
                                     </table>
                                 </div>
                             @endif
@@ -152,105 +154,83 @@ smkn3banjar@ymail.com | Telp: (0265)2734141</p>
                     </div>
                 </div>
 
-                {{-- 2. TAB PENGEMBALIAN --}}
-                <div class="tab-pane fade" id="pills-kembali">
-                    <div class="card shadow-sm border-0 rounded-lg overflow-hidden">
-                        <div class="card-body p-5">
-                            <div class="text-center mb-5">
-                                <h3 class="fw-bold text-uppercase mb-1 text-success">Laporan Pengembalian</h3>
-                                <p class="text-secondary small">Catatan buku yang telah diterima kembali</p>
-                                <hr class="mx-auto border-2 border-success" style="width: 50px;">
-                            </div>
-                            <div class="table-responsive">
-                                <table class="table table-hover align-middle border">
-                                    <thead class="bg-success bg-opacity-10 text-success">
-                                        <tr class="text-center small fw-bold">
-                                            <th>No</th>
-                                            <th class="text-start">Nama Siswa</th>
-                                            <th class="text-start">Buku</th>
-                                            <th>Tgl Pinjam</th>
-                                            <th>Tgl Kembali</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-{{-- 2. TAB PENGEMBALIAN --}}
-@forelse($laporan->filter(function($item) use ($bulan, $tahun) {
-    // Memastikan data pengembalian ada dan kolom 'tanggalkembali' sesuai
-    return $item->pengembalian && 
-           date('m', strtotime($item->pengembalian->tanggalkembali)) == $bulan &&
-           date('Y', strtotime($item->pengembalian->tanggalkembali)) == $tahun;
-}) as $item)
-    <tr>
-        <td class="text-center">{{ $loop->iteration }}</td>
-        <td>{{ $item->user->name }}</td>
-        <td>{{ $item->buku->judul }}</td>
-        <td class="text-center">{{ $item->tanggal_pinjam->format('d/m/Y') }}</td>
-        <td class="text-success text-center">
-            {{-- Menggunakan Carbon untuk memformat tanggalkembali --}}
-            {{ \Carbon\Carbon::parse($item->pengembalian->tanggalkembali)->format('d/m/Y') }}
-        </td>
-    </tr>
-@empty
-    <tr><td colspan="5" class="text-center py-4 text-muted">Belum ada buku kembali periode ini.</td></tr>
-@endforelse
-                                    </tbody>
-                                </table>
-                            </div>
-                            @include('partials.laporan-footer')
-                        </div>
-                    </div>
-                </div>
-
-                {{-- 3. TAB DENDA --}}
-                {{-- 3. TAB DENDA (Bagian yang Diperbaiki) --}}
-<div class="tab-pane fade" id="pills-denda">
-    <div class="card shadow-sm border-0 rounded-lg">
+               {{-- 2. TAB PENGEMBALIAN --}}
+<div class="tab-pane fade" id="pills-kembali">
+    <div class="card shadow-sm border-0 rounded-lg overflow-hidden">
         <div class="card-body p-5">
-            <div class="text-center mb-5">
-                <h3 class="fw-bold text-uppercase mb-1 text-danger">Laporan Pendapatan Denda</h3>
-                <p class="text-secondary small">Total keterlambatan siswa bulan ini</p>
-                <hr class="mx-auto border-2 border-danger" style="width: 50px;">
-            </div>
-            
             <div class="table-responsive">
                 <table class="table table-hover align-middle border">
-                    <thead class="bg-danger bg-opacity-10 text-danger text-uppercase small fw-bold">
-                        <tr class="text-center">
+                    <thead class="bg-success bg-opacity-10 text-success">
+                        <tr class="text-center small fw-bold">
                             <th>No</th>
-                            <th class="text-start">Siswa</th>
-                            <th>Keterlambatan</th>
-                            <th class="text-end">Jumlah Denda</th>
+                            <th class="text-start">Nama Siswa</th>
+                            <th class="text-start">Buku</th>
+                            <th>Jml</th> {{-- Kolom Jumlah --}}
+                            <th>Tgl Kembali</th>
+                            <th>Terlambat</th>
+                            <th class="text-end">Nominal Denda</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @php $totalDenda = 0; $noDenda = 1; @endphp
-                        @foreach($laporan as $item)
-                            @if($item->pengembalian && $item->pengembalian->denda)
-                                @php $totalDenda += $item->pengembalian->denda->jumlah; @endphp
-                                <tr>
-                                    <td class="text-center">{{ $noDenda++ }}</td>
-                                    <td>{{ $item->user->name }}</td>
-                                    <td class="text-center">
-                                        {{ $item->pengembalian->denda->hari_terlambat }} Hari
-                                    </td>
-                                    <td class="text-end">
-                                        Rp {{ number_format($item->pengembalian->denda->jumlah, 0, ',', '.') }}
-                                    </td>
-                                </tr>
-                            @endif
-                        @endforeach
+                        @php 
+                            $grandTotalDenda = 0; 
+                            $totalBukuBerhasilKembali = 0; 
+                        @endphp
                         
-                        @if($noDenda == 1)
-                            <tr>
-                                <td colspan="4" class="text-center py-4 text-muted">Tidak ada data denda pada periode ini.</td>
+                        @forelse($laporanKembali as $item)
+                            @php 
+                                $tglKembali = $item->pengembalian ? \Carbon\Carbon::parse($item->pengembalian->tanggalkembali) : null;
+                                $dendaObj = $item->pengembalian ? $item->pengembalian->denda : null;
+                                $nominal = $dendaObj ? (int)$dendaObj->jumlah : 0;
+                                
+                                $grandTotalDenda += $nominal;
+                                // Menjumlahkan quantity buku
+                                $totalBukuBerhasilKembali += $item->jumlah; 
+                            @endphp
+                            
+                            <tr class="text-center">
+                                <td>{{ $loop->iteration }}</td>
+                                <td class="text-start fw-bold">{{ $item->user->name }}</td>
+                                <td class="text-start">{{ $item->buku->judul }}</td>
+                                <td class="fw-bold">{{ $item->jumlah }}</td> {{-- Menampilkan jumlah per baris --}}
+                                <td class="fw-bold">{{ $tglKembali ? $tglKembali->format('d/m/Y') : '-' }}</td>
+                                <td>
+                                    @if($nominal > 0)
+                                        <span class="text-danger fw-bold">{{ $dendaObj->hari_terlambat }} Hari</span>
+                                    @else
+                                        <span class="text-success small">Tepat Waktu</span>
+                                    @endif
+                                </td>
+                                <td class="text-end fw-bold">
+                                    Rp {{ number_format($nominal, 0, ',', '.') }}
+                                </td>
                             </tr>
-                        @endif
+                        @empty
+                            <tr>
+                                <td colspan="7" class="text-center py-4 text-muted">Tidak ada pengembalian pada periode ini.</td>
+                            </tr>
+                        @endforelse
                     </tbody>
+                    
                     <tfoot class="table-light">
-                        <tr class="fw-bold">
-                            <td colspan="3" class="text-end">TOTAL SELURUH DENDA:</td>
-                            <td class="text-end text-danger">Rp {{ number_format($totalDenda, 0, ',', '.') }}</td>
+                        {{-- Baris Total Buku --}}
+                        <tr class="fw-bold text-dark">
+                            <td colspan="3" class="text-end text-uppercase">Total Koleksi Buku Kembali:</td>
+                            <td class="text-center text-primary" style="font-size: 1rem;">
+                                {{ $totalBukuBerhasilKembali }} Eks
+                            </td>
+                            <td colspan="3"></td>
                         </tr>
+
+                        {{-- Baris Total Denda --}}
+                        @if($grandTotalDenda > 0)
+                        <tr class="fw-bold text-dark">
+                            <td colspan="6" class="text-end text-uppercase">Total Pendapatan Denda:</td>
+                            <td class="text-end text-danger" style="font-size: 1rem;">
+                                Rp {{ number_format($grandTotalDenda, 0, ',', '.') }}
+                            </td>
+                        </tr>
+                        @endif
                     </tfoot>
                 </table>
             </div>
@@ -258,6 +238,8 @@ smkn3banjar@ymail.com | Telp: (0265)2734141</p>
         </div>
     </div>
 </div>
+
+
 
                 {{-- 4. TAB BUKU (INVENTARIS) --}}
                 <div class="tab-pane fade" id="pills-buku">
@@ -279,25 +261,32 @@ smkn3banjar@ymail.com | Telp: (0265)2734141</p>
                                             <th>Status</th>
                                         </tr>
                                     </thead>
-                                    <tbody>
-                                        @foreach($buku_all as $buku)
-                                        <tr>
-                                            <td class="text-center">{{ $loop->iteration }}</td>
-                                            <td class="fw-bold">{{ $buku->judul }}</td>
-                                            <td class="text-center">{{ $buku->stok }}</td>
-                                            <td class="text-center">{{ $buku->stok_tersedia }}</td>
-                                            <td class="text-center">
-                                                @if($buku->stok_tersedia <= 0)
-                                                    <span class="badge bg-danger">Habis</span>
-                                                @elseif($buku->stok_tersedia < 3)
-                                                    <span class="badge bg-warning text-dark">Hampir Habis</span>
-                                                @else
-                                                    <span class="badge bg-success">Tersedia</span>
-                                                @endif
-                                            </td>
-                                        </tr>
-                                        @endforeach
-                                    </tbody>
+                                     <tbody>
+    @foreach($buku_all as $buku)
+    <tr>
+        <td class="text-center">{{ $loop->iteration }}</td>
+        <td class="fw-bold">{{ $buku->judul }}</td>
+        
+        {{-- Total semua buku yang dimiliki --}}
+        <td class="text-center">{{ $buku->stok }}</td>
+
+        {{-- Sisa yang ada di rak --}}
+        <td class="text-center fw-bold text-primary">
+            {{ $buku->stok_tersedia }}
+        </td>
+        
+        <td class="text-center">
+            @if($buku->stok_tersedia <= 0)
+                <span class="badge bg-danger">Habis</span>
+            @elseif($buku->stok_tersedia < 3)
+                <span class="badge bg-warning text-dark">Kritis</span>
+            @else
+                <span class="badge bg-success">Tersedia</span>
+            @endif
+        </td>
+    </tr>
+    @endforeach
+</tbody>
                                 </table>
                             </div>
                             @include('partials.laporan-footer')
@@ -349,7 +338,7 @@ smkn3banjar@ymail.com | Telp: (0265)2734141</p>
         }
 
         .card { 
-            border: none !important; 
+            border: 1px solid #dee2e6 !important;
             box-shadow: none !important; 
         }
 
@@ -374,11 +363,12 @@ smkn3banjar@ymail.com | Telp: (0265)2734141</p>
         }
         
         .table th { 
-            background-color: #f0f0f0 !important; 
+            background-color: #f8f9fa !important;
             color: black !important;
             border: 1px solid #000 !important;
             text-transform: uppercase;
             font-size: 11px !important;
+            print-color-adjust: exact;
             -webkit-print-color-adjust: exact;
         }
 
@@ -401,7 +391,9 @@ smkn3banjar@ymail.com | Telp: (0265)2734141</p>
             font-size: 18px !important;
             margin-top: 10px;
         }
-        
+        a[href]:after {
+        content: none !important;
+    }
         hr {
             border-top: 2px solid #000 !important;
             opacity: 1 !important;

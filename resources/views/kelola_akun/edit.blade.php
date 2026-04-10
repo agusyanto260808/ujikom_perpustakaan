@@ -49,7 +49,7 @@
                                         <select name="role" id="role" 
                                             class="form-select form-select-lg @error('role') is-invalid @enderror" 
                                             onchange="toggleNisn(this.value)">
-                                            <option value="siswa" {{ old('role', $user->role) == 'siswa' ? 'selected' : '' }}>Siswa</option>
+                                            <option value="anggota" {{ old('role', $user->role) == 'anggota' ? 'selected' : '' }}>Siswa</option>
                                             <option value="petugas" {{ old('role', $user->role) == 'petugas' ? 'selected' : '' }}>Petugas</option>
                                         </select>
                                         @error('role')
@@ -59,7 +59,7 @@
 
                                     {{-- NISN --}}
                                     <div class="col-md-6" id="nisn_field">
-                                        <label for="nisn" class="form-label fw-semibold text-secondary small text-uppercase">NISN (Khusus Siswa)</label>
+                                        <label for="nisn" class="form-label fw-semibold text-secondary small text-uppercase">NISN</label>
                                         <input type="text" id="nisn" name="nisn" 
                                             class="form-control form-control-lg @error('nisn') is-invalid @enderror" 
                                             value="{{ old('nisn', $user->nisn) }}">
@@ -107,7 +107,7 @@
     <script>
         function toggleNisn(role) {
             const field = document.getElementById('nisn_field');
-            if (role === 'siswa') {
+            if (role === 'anggota') {
                 field.style.display = 'block';
             } else {
                 field.style.display = 'none';

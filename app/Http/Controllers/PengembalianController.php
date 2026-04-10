@@ -41,63 +41,63 @@ class PengembalianController extends Controller
 
     // PengembalianController.php
 
+    // File: App\Http\Controllers\PengembalianController.php
     public function store(Request $request, $id)
     {
-        $pinjam = Peminjaman::findOrFail($id);
+        $pinjam = \App\Models\Peminjaman::findOrFail($id);
 
-        // Cek agar tidak dobel input
-        $sudahKembali = DB::table('pengembalian')->where('idpinjam', $id)->exists();
-        if ($sudahKembali) {
-            return redirect()->route('pengembalian.index')->with('error', 'Data ini sudah diproses sebelumnya.');
-        }
+        return \DB::transaction(function () use ($pinjam) {
+            // --- LOGIKA PERHITUNGAN DENDA ---
+            $tglKembali = now(); // Tanggal hari ini
+            $tglJatuhTempo = \Carbon\Carbon::parse($pinjam->tanggal_jatuh_tempo);
 
-        return DB::transaction(function () use ($pinjam) {
-            // 1. Ambil Tanggal Jatuh Tempo (Hanya Tanggal, abaikan jam)
-            $jatuhTempo = \Carbon\Carbon::parse($pinjam->tanggal_jatuh_tempo)->startOfDay();
-            // 2. Ambil Tanggal Hari Ini (Hanya Tanggal)
-            $hariIni = \Carbon\Carbon::now()->startOfDay();
-
+            $hariTerlambat = 0;
             $nominalDenda = 0;
-            $selisihHari = 0;
+            $tarifPerHari = 2000;
 
-            // 3. Logika Perhitungan Denda
-            // Menggunakan diffInDays dengan parameter kedua 'false' agar mendapatkan angka murni
-            if ($hariIni->gt($jatuhTempo)) {
-                $selisihHari = $hariIni->diffInDays($jatuhTempo);
-                $nominalDenda = $selisihHari * 2000;
+            // Cek jika tgl kembali melewati jatuh tempo
+            if ($tglKembali->gt($tglJatuhTempo)) {
+                // Hitung selisih hari
+                $hariTerlambat = $tglKembali->diffInDays($tglJatuhTempo);
+                $nominalDenda = $hariTerlambat * $tarifPerHari;
             }
+            // --------------------------------
 
-            // 4. Simpan ke tabel pengembalian
-            $idKembali = DB::table('pengembalian')->insertGetId([
+            // 1. Simpan ke tabel PENGEMBALIAN
+            $idKembali = \DB::table('pengembalian')->insertGetId([
                 'idpinjam'       => $pinjam->idpinjam,
-                'tanggalkembali' => now(), // Waktu asli pengembalian
+                'tanggalkembali' => $tglKembali->toDateString(),
                 'created_at'     => now(),
                 'updated_at'     => now(),
             ]);
 
-            // 5. Simpan ke tabel denda JIKA ada keterlambatan
+            // 2. Simpan ke tabel DENDA (Hanya jika terlambat)
             if ($nominalDenda > 0) {
-                DB::table('denda')->insert([
+                \DB::table('denda')->insert([
                     'idpengembalian' => $idKembali,
                     'jumlah'         => $nominalDenda,
-                    'hari_terlambat' => $selisihHari,
-                    'tarif_per_hari' => 2000,
-                    'status'         => 'Belum Lunas',
+                    'hari_terlambat' => $hariTerlambat,
+                    'status'         => 'belum_bayar',
+                    'tarif_per_hari' => $tarifPerHari,
                     'created_at'     => now(),
                     'updated_at'     => now(),
                 ]);
             }
 
-            // 6. Update status di tabel peminjaman & Tambah Stok
-            $pinjam->update(['status' => 'kembali']);
+            // 3. Update status peminjaman
+            $pinjam->update([
+                'status' => 'kembali',
+            ]);
 
+            // 4. Tambah stok buku kembali
             if ($pinjam->buku) {
                 $pinjam->buku->increment('stok', $pinjam->jumlah);
             }
 
-            $pesan = $nominalDenda > 0
-                ? "Buku diterima. Terlambat $selisihHari hari, denda otomatis dicatat: Rp " . number_format($nominalDenda, 0, ',', '.')
-                : "Buku diterima tepat waktu. Stok buku bertambah.";
+            $pesan = 'Buku berhasil diterima!';
+            if ($nominalDenda > 0) {
+                $pesan .= " Terlambat {$hariTerlambat} hari. Denda Rp " . number_format($nominalDenda, 0, ',', '.') . " telah dicatat.";
+            }
 
             return redirect()->route('pengembalian.index')->with('success', $pesan);
         });

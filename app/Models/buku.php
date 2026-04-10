@@ -30,14 +30,15 @@ class Buku extends Model
     // Ini akan dipanggil di Blade dengan $item->stok_tersedia
     public function getStokTersediaAttribute()
     {
-        // Hitung buku yang sedang dipinjam (status selain 'Kembali')
+        // Hitung total buku yang sedang dipinjam (bukan barisnya)
+        // Filter status: buku dianggap "keluar" jika statusnya bukan 'Kembali' atau 'Ditolak'
         $sedangDipinjam = $this->peminjamans()
-            ->where('status', '!=', 'Kembali')
-            ->count();
+            ->whereNotIn('status', ['Kembali', 'Ditolak'])
+            ->sum('jumlah');
 
         $sisa = $this->stok - $sedangDipinjam;
 
-        return $sisa < 0 ? 0 : $sisa; // Pastikan tidak minus
+        return $sisa < 0 ? 0 : $sisa;
     }
 
     public function kategori()

@@ -165,3 +165,33 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
 </x-app-layout>
+{{-- SweetAlert2 untuk tampilan pesan yang lebih cantik --}}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    function confirmDelete(userId, userName) {
+        Swal.fire({
+            title: 'Hapus Pengguna?',
+            text: "Apakah Anda yakin ingin menghapus " + userName + "? Data yang dihapus tidak dapat dikembalikan.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal',
+            reverseButtons: true
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Mengirim form berdasarkan ID yang unik
+                document.getElementById('delete-form-' + userId).submit();
+            }
+        })
+    }
+</script>
+<script>
+    function confirmDelete(userId, userName) {
+        if (confirm("Apakah Anda yakin ingin menghapus " + userName + "?")) {
+            document.getElementById('delete-form-' + userId).submit();
+        }
+    }
+</script>

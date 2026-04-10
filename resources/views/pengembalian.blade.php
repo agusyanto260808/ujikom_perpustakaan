@@ -78,96 +78,76 @@
                 </div>
 
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="bg-light text-secondary">
-                            <tr>
-                                <th class="ps-4 py-3 small text-uppercase">No</th>
-                                <th class="py-3 small text-uppercase">Peminjam</th>
-                                <th class="py-3 small text-uppercase">Buku</th>
-                                <th class="py-3 small text-uppercase text-center">Jatuh Tempo</th>
-                                <th class="py-3 small text-uppercase text-center pe-4">Aksi</th>
-                            </tr>
-                        </thead>
-
-                        <tbody class="bg-white">
-    @forelse ($pengembalian as $item)
-       {{-- Di dalam loop @forelse ($pengembalian as $item) --}}
-@php
-    $tglJatuhTempo = \Carbon\Carbon::parse($item->tanggal_jatuh_tempo)->startOfDay();
-    $hariIni = now()->startOfDay();
-    
-    // Hitung selisih
-    $selisihHari = $hariIni->diffInDays($tglJatuhTempo, false); 
-    
-    $terlambat = $hariIni->gt($tglJatuhTempo) ? $hariIni->diffInDays($tglJatuhTempo) : 0;
-    $totalDenda = $terlambat * 2000;
-
-    // TAMBAHKAN BARIS INI:
-    $statusSekarang = $item->status; 
-@endphp
-
+                   <table class="table table-hover align-middle mb-0">
+    <thead class="bg-light text-secondary">
         <tr>
-            <td class="ps-4 small text-muted">
-                {{ ($pengembalian->currentPage() - 1) * $pengembalian->perPage() + $loop->iteration }}
-            </td>
-
+            <th class="ps-4 py-3 small text-uppercase">No</th>
+            <th class="py-3 small text-uppercase">Peminjam</th>
+            <th class="py-3 small text-uppercase">Buku</th>
+            <th class="py-3 small text-uppercase text-center">Jatuh Tempo</th>
+            <th class="py-3 small text-uppercase text-center">Denda (Est.)</th>
+            <th class="py-3 small text-uppercase text-center pe-4">Aksi</th>
+        </tr>
+    </thead>
+    <tbody class="bg-white">
+        @forelse ($pengembalian as $item)
+        @php
+            $tglJatuhTempo = \Carbon\Carbon::parse($item->tanggal_jatuh_tempo)->startOfDay();
+            $hariIni = now()->startOfDay();
+            $isTerlambat = $hariIni->gt($tglJatuhTempo);
+            $hariTerlambat = $isTerlambat ? $hariIni->diffInDays($tglJatuhTempo) : 0;
+            $nominalDenda = $hariTerlambat * 2000;
+        @endphp
+        <tr>
+            <td class="ps-4 small text-muted">{{ $loop->iteration }}</td>
             <td>
                 <div class="fw-bold text-dark">{{ $item->user->name ?? 'N/A' }}</div>
-                <small class="text-muted">ID Pinjam: #{{ $item->idpinjam }}</small>
+                <small class="text-muted">ID: #{{ $item->idpinjam }}</small>
             </td>
-
-            <td>
-                <div class="fw-semibold text-dark">{{ $item->buku->judul ?? 'Buku tidak tersedia' }}</div>
-                <span class="badge rounded-pill bg-secondary bg-opacity-10 text-secondary small fw-normal">
-                    {{ $item->jumlah }} Buku
+            <td>{{ $item->buku->judul ?? '-' }}</td>
+            <td class="text-center">
+                <span class="{{ $isTerlambat ? 'text-danger fw-bold' : 'text-dark' }} small">
+                    {{ $tglJatuhTempo->format('d/m/Y') }}
                 </span>
             </td>
-
-            <td class="text-center">
-                @if($selisihHari > 0)
-                    <span class="text-danger fw-bold small">
-                        <i class="bi bi-calendar-x me-1"></i>{{ $tglJatuhTempo->format('d/m/Y') }}
-                        <br><small class="fw-normal">(Terlambat {{ $selisihHari }} Hari)</small>
-                    </span>
+          <td class="text-center">
+    @php
+        $tglJatuhTempo = \Carbon\Carbon::parse($item->tanggal_jatuh_tempo)->startOfDay();
+        $hariIni = now()->startOfDay();
+        $estHariTerlambat = $hariIni->gt($tglJatuhTempo) ? $hariIni->diffInDays($tglJatuhTempo) : 0;
+        $estDenda = $estHariTerlambat * 2000;
+    @endphp
+    
+    @if($estDenda > 0)
+      <span class="text-muted small">Aman</span>
+        
+    @else
+      <span class="badge bg-danger-subtle text-danger border border-danger-subtle">
+            Rp {{ number_format($estDenda, 0, ',', '.') }}
+        </span>
+        <div class="small text-muted">{{ $estHariTerlambat }} Hari</div>
+    @endif
+</td>
+            <td class="text-center pe-4">
+                @if($item->status == 'proses kembali')
+                    <form action="{{ route('pengembalian.store', $item->idpinjam) }}" method="POST">
+                        @csrf
+                        <button type="submit" class="btn btn-sm btn-success px-3 fw-bold shadow-sm">
+                            <i class="bi bi-check2-circle me-1"></i> Terima Buku
+                        </button>
+                    </form>
                 @else
-                    <span class="text-secondary small">
-                        {{ $tglJatuhTempo->format('d/m/Y') }}
+                    <span class="badge rounded-pill bg-success-subtle text-success border border-success-subtle px-3 py-2">
+                        <i class="bi bi-patch-check-fill me-1"></i> Selesai
                     </span>
                 @endif
             </td>
-
-            <td class="text-center pe-4">
-                <div class="d-flex justify-content-center gap-2">
-                    @if($statusSekarang == 'proses kembali')
-                        {{-- Pastikan Form ini yang digunakan di halaman Admin Konfirmasi Pengembalian --}}
-<form action="{{ route('pengembalian.store', $item->idpinjam) }}" method="POST">
-    @csrf
-    <button type="submit" class="btn btn-sm btn-success">Terima Buku</button>
-</form>
-                    @elseif(in_array($statusSekarang, ['kembali', 'selesai']))
-                        <span class="badge rounded-pill bg-success-subtle text-success px-3 py-2 border border-success-subtle">
-                            <i class="bi bi-check-all me-1"></i> Selesai
-                        </span>
-                    @else
-                        <span class="badge rounded-pill bg-light text-secondary border px-3 py-2 fw-normal">
-                            {{ ucfirst($item->status) }}
-                        </span>
-                    @endif
-                    
-                    
-                </div>
-            </td>   
         </tr>
-    @empty
-        <tr>
-            <td colspan="5" class="text-center py-5 text-muted">
-                <i class="bi bi-clipboard-check fs-1 opacity-25"></i>
-                <p class="mt-2">Tidak ada pengajuan ditemukan untuk filter ini</p>
-            </td>
-        </tr>
-    @endforelse
-</tbody>
-                    </table>
+        @empty
+        {{-- ... row kosong ... --}}
+        @endforelse
+    </tbody>
+</table>
                 </div>
 
                 @if($pengembalian->hasPages())

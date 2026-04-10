@@ -17,9 +17,9 @@
     {{ __('Laporan') }}
 </x-nav-link>
 
-<x-nav-link :href="route('denda.index')" :active="request()->routeIs('denda.index')" class="text-black fw-bold">
+{{-- <x-nav-link :href="route('denda.index')" :active="request()->routeIs('denda.index')" class="text-black fw-bold">
     {{ __('Denda') }}
-</x-nav-link>
+</x-nav-link> --}}
 
 <div class="hidden sm:flex sm:items-center sm:ms-6 ">
     <x-dropdown align="right" width="48" class="text-black fw-bold">

@@ -47,30 +47,27 @@ class PeminjamanController extends Controller
     {
         $request->validate([
             'idbuku' => 'required|exists:buku,idbuku',
-            'tanggal_kembali' => 'required|date|after:today', // Sesuaikan name-nya
+            'tanggal_kembali' => 'required|date|after:today',
             'jumlah' => 'required|integer|min:1',
         ]);
 
         $buku = Buku::findOrFail($request->idbuku);
 
-        if ($buku->stok < $request->jumlah) {
-            return redirect()->back()->with('error', 'Stok tidak mencukupi');
+        // CRITICAL: Cek stok menggunakan Accessor 'stok_tersedia'
+        if ($buku->stok_tersedia < $request->jumlah) {
+            return redirect()->back()->with('error', 'Maaf, stok yang tersedia saat ini tidak mencukupi.');
         }
 
-        DB::transaction(function () use ($request, $buku) {
-            $buku->decrement('stok', $request->jumlah);
+        Peminjaman::create([
+            'iduser' => auth()->id(),
+            'idbuku' => $request->idbuku,
+            'tanggal_pinjam' => now(),
+            'tanggal_jatuh_tempo' => $request->tanggal_kembali,
+            'status' => 'Menunggu', // Jika status 'Menunggu' ikut mengurangi stok di Model
+            'jumlah' => $request->jumlah,
+        ]);
 
-            Peminjaman::create([
-                'iduser' => auth()->id(),
-                'idbuku' => $request->idbuku,
-                'tanggal_pinjam' => now(),
-                'tanggal_jatuh_tempo' => $request->tanggal_kembali, // Gunakan name yang benar
-                'status' => 'Menunggu',
-                'jumlah' => $request->jumlah,
-            ]);
-        });
-
-        return redirect()->route('riwayat_peminjaman.index')->with('success', 'Berhasil!');
+        return redirect()->route('riwayat_peminjaman.index')->with('success', 'Permintaan pinjam berhasil dikirim!');
     }
     public function update(Request $request, $id)
     {

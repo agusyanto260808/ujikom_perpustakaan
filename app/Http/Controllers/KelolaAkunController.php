@@ -14,15 +14,14 @@ class KelolaAkunController extends Controller
      */
     public function index(Request $request)
     {
-        // Ambil parameter role dari URL, default ke 'siswa'
-        $role = $request->get('role', 'siswa');
+        // Ubah default ke 'anggota'
+        $role = $request->get('role', 'anggota');
 
-        // Filter user berdasarkan role yang dipilih
         $users = \App\Models\User::where('role', $role)
-            ->where('role', '!=', 'admin') // Opsional: Sembunyikan admin dari list
+            ->where('role', '!=', 'admin')
             ->latest()
             ->paginate(10)
-            ->withQueryString(); // Penting: Agar filter role tidak hilang saat pindah page
+            ->withQueryString();
 
         return view('kelola_akun.index', compact('users', 'role'));
     }
@@ -40,26 +39,24 @@ class KelolaAkunController extends Controller
      */
     public function store(Request $request)
     {
-        // 1. Validasi Data
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users',
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            'role' => 'required|in:admin,petugas,siswa',
-            'nisn' => 'nullable|required_if:role,siswa|unique:users,nisn',
+            // Ganti 'siswa' menjadi 'anggota'
+            'role' => 'required|in:admin,petugas,anggota',
+            'nisn' => 'nullable|required_if:role,anggota|unique:users,nisn',
         ]);
 
-        // 2. Proses Simpan ke Database
         User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'role' => $request->role,
-            // Logika: Jika role siswa simpan NISN, jika tidak simpan null
-            'nisn' => ($request->role === 'siswa') ? $request->nisn : null,
+            // Ganti pengecekan 'siswa' menjadi 'anggota'
+            'nisn' => ($request->role === 'anggota') ? $request->nisn : null,
         ]);
 
-        // 3. Redirect ke Halaman Index
         return redirect()->route('kelola_akun.index')->with('success', 'Akun berhasil dibuat!');
     }
 
@@ -94,24 +91,23 @@ class KelolaAkunController extends Controller
     {
         $user = User::findOrFail($id);
 
-        // 1. Validasi
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $user->id,
-            'role' => 'required|in:admin,petugas,siswa',
-            'nisn' => 'nullable|required_if:role,siswa|unique:users,nisn,' . $user->id,
+            // Ganti 'siswa' menjadi 'anggota'
+            'role' => 'required|in:admin,petugas,anggota',
+            'nisn' => 'nullable|required_if:role,anggota|unique:users,nisn,' . $user->id,
             'password' => ['nullable', 'confirmed', \Illuminate\Validation\Rules\Password::defaults()],
         ]);
 
-        // 2. Data Dasar
         $data = [
             'name' => $request->name,
             'email' => $request->email,
             'role' => $request->role,
-            'nisn' => ($request->role === 'siswa') ? $request->nisn : null,
+            // Ganti pengecekan 'siswa' menjadi 'anggota'
+            'nisn' => ($request->role === 'anggota') ? $request->nisn : null,
         ];
 
-        // 3. Logika Password (Hanya update jika diisi)
         if ($request->filled('password')) {
             $data['password'] = Hash::make($request->password);
         }
