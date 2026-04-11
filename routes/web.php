@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Route;
 
 // 1. Rute Publik
 Route::get('/', function () {
-    return view('welcome');
+    return view('welcome'); // Ganti dengan view yang sesuai, misalnya 'welcome' atau 'home'
 })->name('welcome');
 
 require __DIR__ . '/auth.php';

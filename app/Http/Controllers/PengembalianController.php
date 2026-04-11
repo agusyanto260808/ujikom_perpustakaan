@@ -89,10 +89,6 @@ class PengembalianController extends Controller
                 'status' => 'kembali',
             ]);
 
-            // 4. Tambah stok buku kembali
-            if ($pinjam->buku) {
-                $pinjam->buku->increment('stok', $pinjam->jumlah);
-            }
 
             $pesan = 'Buku berhasil diterima!';
             if ($nominalDenda > 0) {
@@ -102,7 +98,7 @@ class PengembalianController extends Controller
             return redirect()->route('pengembalian.index')->with('success', $pesan);
         });
     }
-    // Fungsi untuk User melihat daftar buku yang bisa dikembalikan
+
     public function kembaliBukuUser()
     {
         $peminjaman = Peminjaman::with('buku')

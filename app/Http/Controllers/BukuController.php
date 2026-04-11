@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Buku;
 use App\Models\Kategori;
+use App\Models\Peminjaman;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
