@@ -1,432 +1,411 @@
 <x-app-layout>
-    <x-slot name="header">
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
-        <div class="d-flex justify-content-between align-items-center">
-            <h2 class="h4 fw-bold text-dark mb-0 mt-5">
-                <i class="bi bi-database-fill-gear"></i> Pusat Laporan Perpustakaan Terpadu
-            </h2>
-            <small class="text-muted mt-5">
-                Periode: <strong>{{ $nama_bulan }} {{ $tahun }}</strong>
-            </small>
-        </div>
-    </x-slot>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #f4f7fa;
+        }
 
-    <div class="py-5 bg-light min-vh-100">
-        <div class="container">
-<div class="print-only">
-    <div class="d-flex align-items-center pb-3 mb-4" style="border-bottom: 3px solid #000; padding-bottom: 15px;">
-        
-        {{-- Logo: Pastikan max-height tidak terlalu besar agar tidak menekan garis --}}
-        <div class="me-4">
-            <img src="{{ asset('storage/logo.png') }}" alt="Logo" style="max-height: 80px; width: auto; display: block;">
-        </div>
+        /* Tema Gradient Header (Serupa dengan halaman Buku/Pengembalian) */
+        .header-gradient {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            border-radius: 0 0 30px 30px;
+            padding: 80px 0 100px 0;
+            margin-bottom: -60px;
+        }
 
-        {{-- Teks Header --}}
-        <div class="text-start flex-grow-1">
-            <h4 class="mb-1 fw-bold text-uppercase" style="letter-spacing: 1px; line-height: 1.2;">
-                Perpustakaan Terpadu Digital
-            </h4>
-            <p class="mb-0 small" style="font-size: 14px;">
-Jl. Julaeni, RT/RW 5/2, Dsn. Langensari, Kel. Langensari, </p>
-<P>Kec. Langensari, Kota Banjar, Jawa Barat 46341</p>
-            <p class="mb-0 small" style="font-size: 14px;">
-smkn3banjar@ymail.com | Telp: (0265)2734141</p>
-        </div>
-    </div>
-</div>
-            {{-- TAB NAVIGASI (no-print) --}}
-            <div class="no-print mb-4">
-                <ul class="nav nav-pills bg-white p-2 rounded-3 shadow-sm d-inline-flex" id="pills-tab" role="tablist">
-                    <li class="nav-item">
-                        <button class="nav-link active fw-bold small" data-bs-toggle="pill" data-bs-target="#pills-pinjam">
-                            <i class="bi bi-box-arrow-right me-1"></i> Peminjaman
-                        </button>
-                    </li>
-                    <li class="nav-item">
-                        <button class="nav-link fw-bold small" data-bs-toggle="pill" data-bs-target="#pills-kembali">
-                            <i class="bi bi-box-arrow-in-left me-1"></i> Pengembalian
-                        </button>
-                    </li>
-                    <li class="nav-item">
-                        <button class="nav-link fw-bold small" data-bs-toggle="pill" data-bs-target="#pills-buku">
-                            <i class="bi bi-journals me-1"></i> Inventaris Buku
-                        </button>
-                    </li>
-                </ul>
-            </div>
+        .modern-card {
+            border: none;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+            background: #fff;
+        }
 
-            {{-- FILTER SECTION --}}
-            <div class="card shadow-sm border-0 rounded-3 mb-4 no-print">
-                <div class="card-body p-3">
-                    <form method="GET" action="{{ route('laporan.index') }}" class="row g-2 align-items-end">
-                        <input type="hidden" name="active_tab" id="active_tab_input" value="{{ request('active_tab', 'pills-pinjam') }}">
-                        <div class="col-md-3">
-    <label class="small fw-bold text-secondary mb-1">Bulan</label>
-    <select name="bulan" class="form-select form-select-sm shadow-none">
-        @foreach(range(1, 12) as $m)
-            {{-- Menggunakan $bulan --}}
-            <option value="{{ $m }}" {{ (int)$bulan == $m ? 'selected' : '' }}>
-                {{ \Carbon\Carbon::create()->month((int)$m)->translatedFormat('F') }}
-            </option>
-        @endforeach
-    </select>
-</div>
-                        <div class="col-md-3">
-                            <label class="small fw-bold text-secondary mb-1">Tahun</label>
-                            <select name="tahun" class="form-select form-select-sm shadow-none">
-                                @for($y = date('Y'); $y >= date('Y') - 5; $y--)
-                                    <option value="{{ $y }}" {{ (int)$tahun == $y ? 'selected' : '' }}>{{ $y }}</option>
-                                @endfor
-                            </select>
-                        </div>
-                        <div class="col-md-6 d-flex gap-2">
-                            <button type="submit" class="btn btn-sm btn-dark px-4 fw-bold shadow-sm">
-                                <i class="bi bi-filter-left"></i> Terapkan Filter
-                            </button>
-                            <button type="button" onclick="window.print()" class="btn btn-sm btn-primary px-4 fw-bold shadow-sm">
-                                <i class="bi bi-printer"></i> Cetak Laporan
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
+        /* Nav Pills Modern */
+        .nav-pills-modern {
+            background: #fff;
+            padding: 8px;
+            border-radius: 15px;
+            display: inline-flex;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
 
-            <div class="tab-content" id="pills-tabContent">
-                
-                {{-- 1. TAB PEMINJAMAN --}}
-                <div class="tab-pane fade show active" id="pills-pinjam">
-                    <div class="card shadow-sm border-0 rounded-lg overflow-hidden">
-                        <div class="card-body p-5">
-                            <div class="text-center mb-5">
-                                <h3 class="fw-bold text-uppercase mb-1">Laporan Peminjaman</h3>
-                                <p class="text-secondary small">Ringkasan transaksi keluar buku periode {{ $nama_bulan }} {{ $tahun }}</p>
-                                <hr class="mx-auto border-2 border-primary" style="width: 50px;">
-                            </div>
-                            
-                            {{-- Pastikan file ini ada atau ganti dengan tabel manual --}}
-                            @if(View::exists('laporan.partials.table-peminjaman'))
-                                @include('laporan.partials.table-peminjaman')
-                            @else
-                                <div class="table-responsive">
-                                    <table class="table table-hover align-middle border">
-                                        <thead class="bg-light">
-                                            <tr class="text-center small fw-bold">
-                                                <th>No</th>
-                                                <th class="text-start">Nama Peminjam</th>
-                                                <th class="text-start">Judul Buku</th>
-                                                <th>Tgl Pinjam</th>
-                                                <th>Status</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-    @forelse($laporan as $item)
-    <tr class="text-center">
-        <td>{{ $loop->iteration }}</td>
-        <td class="text-start fw-bold">{{ $item->user->name }}</td>
-        <td class="text-start">{{ $item->buku->judul }}</td>
-        <td>{{ $item->tanggal_pinjam->format('d/m/Y') }}</td>
-        <td>
-            @if($item->status == 'Menunggu')
-                <span class="badge border text-warning border-warning">Menunggu</span>
-            @elseif($item->status == 'Dipinjam')
-                <span class="badge border text-primary border-primary">Sedang Dipinjam</span>
-            @else
-                <span class="badge border text-success border-success">Selesai</span>
-            @endif
-        </td>
-    </tr>
-    @empty
-    <tr>
-        <td colspan="5" class="text-center py-4 text-muted">Tidak ada transaksi peminjaman periode ini.</td>
-    </tr>
-    @endforelse
-</tbody>
-                                    </table>
-                                </div>
-                            @endif
+        .nav-pills-modern .nav-link {
+            border-radius: 12px;
+            padding: 10px 20px;
+            font-weight: 600;
+            color: #64748b;
+            transition: 0.3s;
+        }
 
-                            @include('partials.laporan-footer')
-                            <div class="print-only mt-5"> 
-</div>
-                        </div>
-                    </div>
-                </div>
+        .nav-pills-modern .nav-link.active {
+            background: #1e293b;
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(30, 41, 59, 0.2);
+        }
 
-               {{-- 2. TAB PENGEMBALIAN --}}
-<div class="tab-pane fade" id="pills-kembali">
-    <div class="card shadow-sm border-0 rounded-lg overflow-hidden">
-        <div class="card-body p-5">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle border">
-                    <thead class="bg-success bg-opacity-10 text-success">
-                        <tr class="text-center small fw-bold">
-                            <th>No</th>
-                            <th class="text-start">Nama Siswa</th>
-                            <th class="text-start">Buku</th>
-                            <th>Jml</th> {{-- Kolom Jumlah --}}
-                            <th>Tgl Kembali</th>
-                            <th>Terlambat</th>
-                            <th class="text-end">Nominal Denda</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @php 
-                            $grandTotalDenda = 0; 
-                            $totalBukuBerhasilKembali = 0; 
-                        @endphp
-                        
-                        @forelse($laporanKembali as $item)
-                            @php 
-                                $tglKembali = $item->pengembalian ? \Carbon\Carbon::parse($item->pengembalian->tanggalkembali) : null;
-                                $dendaObj = $item->pengembalian ? $item->pengembalian->denda : null;
-                                $nominal = $dendaObj ? (int)$dendaObj->jumlah : 0;
-                                
-                                $grandTotalDenda += $nominal;
-                                // Menjumlahkan quantity buku
-                                $totalBukuBerhasilKembali += $item->jumlah; 
-                            @endphp
-                            
-                            <tr class="text-center">
-                                <td>{{ $loop->iteration }}</td>
-                                <td class="text-start fw-bold">{{ $item->user->name }}</td>
-                                <td class="text-start">{{ $item->buku->judul }}</td>
-                                <td class="fw-bold">{{ $item->jumlah }}</td> {{-- Menampilkan jumlah per baris --}}
-                                <td class="fw-bold">{{ $tglKembali ? $tglKembali->format('d/m/Y') : '-' }}</td>
-                                <td>
-                                    @if($nominal > 0)
-                                        <span class="text-danger fw-bold">{{ $dendaObj->hari_terlambat }} Hari</span>
-                                    @else
-                                        <span class="text-success small">Tepat Waktu</span>
-                                    @endif
-                                </td>
-                                <td class="text-end fw-bold">
-                                    Rp {{ number_format($nominal, 0, ',', '.') }}
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="7" class="text-center py-4 text-muted">Tidak ada pengembalian pada periode ini.</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                    
-                    <tfoot class="table-light">
-                        {{-- Baris Total Buku --}}
-                        <tr class="fw-bold text-dark">
-                            <td colspan="3" class="text-end text-uppercase">Total Koleksi Buku Kembali:</td>
-                            <td class="text-center text-primary" style="font-size: 1rem;">
-                                {{ $totalBukuBerhasilKembali }} Eks
-                            </td>
-                            <td colspan="3"></td>
-                        </tr>
+        /* Form Styling */
+        .form-select-modern {
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            padding: 10px 15px;
+        }
 
-                        {{-- Baris Total Denda --}}
-                        @if($grandTotalDenda > 0)
-                        <tr class="fw-bold text-dark">
-                            <td colspan="6" class="text-end text-uppercase">Total Pendapatan Denda:</td>
-                            <td class="text-end text-danger" style="font-size: 1rem;">
-                                Rp {{ number_format($grandTotalDenda, 0, ',', '.') }}
-                            </td>
-                        </tr>
-                        @endif
-                    </tfoot>
-                </table>
-            </div>
-            @include('partials.laporan-footer')
-        </div>
-    </div>
-</div>
+        .btn-modern {
+            border-radius: 12px;
+            padding: 10px 25px;
+            font-weight: 600;
+            transition: 0.3s;
+        }
 
+        .btn-modern:hover { transform: translateY(-2px); }
 
+        .print-only { display: none; }
 
-                {{-- 4. TAB BUKU (INVENTARIS) --}}
-                <div class="tab-pane fade" id="pills-buku">
-                    <div class="card shadow-sm border-0 rounded-lg overflow-hidden">
-                        <div class="card-body p-5">
-                            <div class="text-center mb-5">
-                                <h3 class="fw-bold text-uppercase mb-1 text-dark">Laporan Inventaris Buku</h3>
-                                <p class="text-secondary small">Kondisi Stok & Koleksi Perpustakaan</p>
-                                <hr class="mx-auto border-2 border-dark" style="width: 50px;">
-                            </div>
-                            <div class="table-responsive">
-                                <table class="table table-bordered align-middle">
-                                    <thead class="bg-dark text-white text-uppercase small">
-                                        <tr class="text-center">
-                                            <th>No</th>
-                                            <th class="text-start">Judul Buku</th>
-                                            <th>Stok Total</th>
-                                            <th>Tersedia</th>
-                                            <th>Status</th>
-                                        </tr>
-                                    </thead>
-                                     <tbody>
-    @foreach($buku_all as $buku)
-    <tr>
-        <td class="text-center">{{ $loop->iteration }}</td>
-        <td class="fw-bold">{{ $buku->judul }}</td>
-        
-        {{-- Total semua buku yang dimiliki --}}
-        <td class="text-center">{{ $buku->stok }}</td>
+        @media print {
+        /* Memaksa browser mencetak warna latar belakang dan grafik */
+        * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
 
-        {{-- Sisa yang ada di rak --}}
-        <td class="text-center fw-bold text-primary">
-            {{ $buku->stok_tersedia }}
-        </td>
-        
-        <td class="text-center">
-            @if($buku->stok_tersedia <= 0)
-                <span class="badge bg-danger">Habis</span>
-            @elseif($buku->stok_tersedia < 3)
-                <span class="badge bg-warning text-dark">Kritis</span>
-            @else
-                <span class="badge bg-success">Tersedia</span>
-            @endif
-        </td>
-    </tr>
-    @endforeach
-</tbody>
-                                </table>
-                            </div>
-                            @include('partials.laporan-footer')
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-        </div>
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
-  <style>
-    /* Tampilan Layar */
-    .nav-pills .nav-link { color: #555; border: 1px solid transparent; margin-right: 5px; transition: 0.3s; }
-    .nav-pills .nav-link.active { background-color: #0d6efd; color: white; border-color: #0d6efd; }
-    .print-only { display: none; }
-
-    /* Tampilan Cetak (Print) */
-    @media print {
+        /* Pengaturan Ukuran Kertas A4 */
         @page {
-            size: A4 portrait;
-            margin: 15mm;
+            size: A4;
+            margin: 1.5cm;
         }
 
-        /* Sembunyikan elemen navigasi dan dashboard */
-        .no-print, .nav, .btn, footer, nav, header, aside, .filter-section { 
-            display: none !important; 
-        }
-
-        /* Tampilkan elemen khusus print */
-        .print-only { 
-            display: block !important; 
-        }
-
-        /* Reset Layout */
-        body { 
-            background: white !important; 
-            color: black !important;
-            font-family: "Times New Roman", Times, serif; /* Font formal */
-        }
-        
-        .container, .py-5 { 
-            max-width: 100% !important; 
-            width: 100% !important; 
-            margin: 0 !important; 
-            padding: 0 !important; 
-        }
-
-        .card { 
-            border: 1px solid #dee2e6 !important;
-            box-shadow: none !important; 
-        }
-
-        .card-body { 
-            padding: 0 !important; 
-        }
-
-        /* Paksa Tab Aktif Saja yang Muncul */
-        .tab-content > .tab-pane {
+        /* Sembunyikan elemen UI yang tidak perlu */
+        .no-print, 
+        .nav-pills-modern, 
+        .header-gradient, 
+        button, 
+        form, 
+        nav {
             display: none !important;
         }
-        .tab-content > .active {
+
+        /* Tampilkan elemen khusus cetak */
+        .print-only {
             display: block !important;
-            opacity: 1 !important;
         }
 
-        /* Optimasi Tabel */
-        .table { 
-            width: 100% !important; 
-            border: 1px solid #000 !important;
-            margin-top: 10px;
+        body {
+            background: white !important;
+            margin: 0;
+            padding: 0;
+            font-size: 11pt;
+            color: #000;
         }
-        
-        .table th { 
-            background-color: #f8f9fa !important;
-            color: black !important;
-            border: 1px solid #000 !important;
+
+        /* Reset Card agar tidak melayang (no shadow) */
+        .modern-card {
+            box-shadow: none !important;
+            border: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+
+        .container {
+            width: 100% !important;
+            max-width: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+
+        /* Styling Tabel ala Dokumen Resmi */
+        .table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            margin-top: 20px;
+        }
+
+        .table th {
+            background-color: #f8f9fa !important; /* Abu-abu muda untuk header */
+            color: #000 !important;
+            border: 1px solid #333 !important;
+            padding: 8px !important;
             text-transform: uppercase;
-            font-size: 11px !important;
-            print-color-adjust: exact;
-            -webkit-print-color-adjust: exact;
+            font-size: 10pt;
         }
 
-        .table td { 
-            border: 1px solid #000 !important; 
-            font-size: 11px !important;
-            padding: 6px !important;
+        .table td {
+            border: 1px solid #333 !important;
+            padding: 8px !important;
+            vertical-align: middle !important;
         }
 
-        /* Badge warna saat diprint */
+        /* Menghilangkan badge yang terlalu mencolok saat diprint */
         .badge {
             border: 1px solid #ccc !important;
-            color: black !important;
             background: transparent !important;
+            color: #000 !important;
             padding: 2px 5px !important;
         }
 
-        /* Judul Laporan */
-        h3 {
-            font-size: 18px !important;
-            margin-top: 10px;
-        }
-        a[href]:after {
-        content: none !important;
-    }
-        hr {
-            border-top: 2px solid #000 !important;
+        /* Force tab content yang sedang aktif untuk memenuhi halaman */
+        .tab-pane {
+            display: none !important;
             opacity: 1 !important;
         }
-    }
-</style>
-    <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // 1. Cek apakah ada parameter active_tab di URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const activeTabId = urlParams.get('active_tab');
-
-    if (activeTabId) {
-        // Cari button tab berdasarkan target id-nya
-        const tabTriggerEl = document.querySelector(`button[data-bs-target="#${activeTabId}"]`);
-        if (tabTriggerEl) {
-            // Aktifkan tab tersebut menggunakan Bootstrap API
-            const tab = new bootstrap.Tab(tabTriggerEl);
-            tab.show();
-            // Update value input hidden agar tetap sinkron
-            document.getElementById('active_tab_input').value = activeTabId;
+        .tab-pane.active {
+            display: block !important;
         }
     }
+    </style>
 
-    // 2. Setiap kali user klik tab lain, update nilai input hidden di form
-    const tabButtons = document.querySelectorAll('button[data-bs-toggle="pill"]');
-    tabButtons.forEach(button => {
-        button.addEventListener('shown.bs.tab', function (event) {
-            // Ambil ID target (misal: pills-denda) tanpa karakter '#'
-            const targetId = event.target.getAttribute('data-bs-target').replace('#', '');
-            document.getElementById('active_tab_input').value = targetId;
+    {{-- HEADER SECTION --}}
+    <div class="header-gradient text-white no-print">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="fw-bold mb-1 h2">
+                        <i class="bi bi-file-earmark-bar-graph me-2"></i>Pusat Laporan
+                    </h1>
+                    <p class="opacity-75 mb-0">Periode Laporan: {{ $nama_bulan }} {{ $tahun }}</p>
+                </div>
+                <div class="nav-pills-modern shadow-sm">
+                    <ul class="nav nav-pills border-0" id="pills-tab" role="tablist">
+                        <li class="nav-item">
+                            <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#pills-pinjam">Peminjaman</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="pill" data-bs-target="#pills-kembali">Pengembalian</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="pill" data-bs-target="#pills-buku">Inventaris</button>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container pb-5 mt-4">
+        {{-- KOP SURAT (HANYA MUNCUL SAAT PRINT) --}}
+       {{-- KOP SURAT (HANYA MUNCUL SAAT PRINT) --}}
+<div class="print-only mb-4">
+    <table style="width: 100%; border-bottom: 3px double #000; padding-bottom: 10px;">
+        <tr>
+            <td style="width: 15%; text-align: center;">
+                <img src="{{ asset('storage/logo.png') }}" alt="Logo" style="width: 80px;">
+            </td>
+            <td style="width: 85%; text-align: center;">
+                <h3 style="margin: 0; text-transform: uppercase; font-weight: bold;">Perpustakaan Terpadu Digital</h3>
+                <p style="margin: 0; font-size: 10pt;">Jl. Julaeni, Kota Banjar, Jawa Barat 46341</p>
+                <p style="margin: 0; font-size: 10pt;">Email: smkn3banjar@ymail.com | Telp: (0265) 2734141</p>
+            </td>
+        </tr>
+    </table>
+</div>
+
+        {{-- FILTER SECTION --}}
+        <div class="modern-card p-4 mb-4 no-print shadow-sm">
+            <form method="GET" action="{{ route('laporan.index') }}" class="row g-3 align-items-end">
+                <input type="hidden" name="active_tab" id="active_tab_input" value="{{ request('active_tab', 'pills-pinjam') }}">
+                <div class="col-md-3">
+                    <label class="small fw-bold text-secondary mb-2">Filter Bulan</label>
+                    <select name="bulan" class="form-select form-select-modern shadow-none">
+                        @foreach(range(1, 12) as $m)
+                            <option value="{{ $m }}" {{ (int)$bulan == $m ? 'selected' : '' }}>
+                                {{ \Carbon\Carbon::create()->month((int)$m)->translatedFormat('F') }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="small fw-bold text-secondary mb-2">Filter Tahun</label>
+                    <select name="tahun" class="form-select form-select-modern shadow-none">
+                        @for($y = date('Y'); $y >= date('Y') - 5; $y--)
+                            <option value="{{ $y }}" {{ (int)$tahun == $y ? 'selected' : '' }}>{{ $y }}</option>
+                        @endfor
+                    </select>
+                </div>
+                <div class="col-md-6 d-flex gap-2">
+                    <button type="submit" class="btn btn-modern btn-dark flex-grow-1 shadow-sm">
+                        <i class="bi bi-filter me-1"></i> Terapkan
+                    </button>
+                    <button type="button" onclick="window.print()" class="btn btn-modern btn-primary shadow-sm px-4">
+                        <i class="bi bi-printer me-1"></i> Cetak Laporan
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="tab-content" id="pills-tabContent">
+            
+            {{-- 1. TAB PEMINJAMAN --}}
+            <div class="tab-pane fade show active" id="pills-pinjam">
+                <div class="modern-card">
+                    <div class="card-body p-lg-5">
+                        <div class="text-center mb-5">
+                            <h4 class="fw-bold text-uppercase mb-1">Laporan Peminjaman</h4>
+                            <p class="text-muted small">Periode {{ $nama_bulan }} {{ $tahun }}</p>
+                            <div class="bg-primary mx-auto" style="height: 3px; width: 40px;"></div>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle border-0">
+                                <thead class="bg-light">
+                                    <tr class="text-uppercase small fw-bold">
+                                        <th class="ps-4">No</th>
+                                        <th>Nama Peminjam</th>
+                                        <th>Judul Buku</th>
+                                        <th class="text-center">Tgl Pinjam</th>
+                                        <th class="text-center">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse($laporan as $item)
+                                    <tr>
+                                        <td class="ps-4 text-muted">{{ $loop->iteration }}</td>
+                                        <td class="fw-bold text-dark">{{ $item->user->name }}</td>
+                                        <td>{{ $item->buku->judul }}</td>
+                                        <td class="text-center">{{ $item->tanggal_pinjam->format('d/m/Y') }}</td>
+                                        <td class="text-center">
+                                            @if($item->status == 'Menunggu')
+                                                <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-3 py-2 rounded-pill">Menunggu</span>
+                                            @elseif($item->status == 'Dipinjam')
+                                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 rounded-pill">Dipinjam</span>
+                                            @else
+                                                <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill">Selesai</span>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                    @empty
+                                    <tr><td colspan="5" class="text-center py-5 text-muted">Belum ada data transaksi.</td></tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                        @include('partials.laporan-footer')
+                    </div>
+                </div>
+            </div>
+
+            {{-- 2. TAB PENGEMBALIAN --}}
+            <div class="tab-pane fade" id="pills-kembali">
+                <div class="modern-card">
+                    <div class="card-body p-lg-5">
+                        <div class="text-center mb-5">
+                            <h4 class="fw-bold text-uppercase mb-1">Laporan Pengembalian</h4>
+                            <p class="text-muted small">Rekapitulasi Denda & Pengembalian Periode {{ $nama_bulan }} {{ $tahun }}</p>
+                            <div class="bg-success mx-auto" style="height: 3px; width: 40px;"></div>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead class="bg-success bg-opacity-10 text-success">
+                                    <tr class="text-uppercase small fw-bold">
+                                        <th class="ps-4">No</th>
+                                        <th>Nama Siswa</th>
+                                        <th>Buku</th>
+                                        <th class="text-center">Jml</th>
+                                        <th class="text-center">Tgl Kembali</th>
+                                        <th class="text-end">Denda</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @php $grandTotalDenda = 0; $totalBuku = 0; @endphp
+                                    @forelse($laporanKembali as $item)
+                                        @php 
+                                            $nominal = $item->pengembalian->denda->jumlah ?? 0;
+                                            $grandTotalDenda += $nominal;
+                                            $totalBuku += $item->jumlah;
+                                        @endphp
+                                        <tr>
+                                            <td class="ps-4 text-muted">{{ $loop->iteration }}</td>
+                                            <td class="fw-bold">{{ $item->user->name }}</td>
+                                            <td>{{ $item->buku->judul }}</td>
+                                            <td class="text-center">{{ $item->jumlah }}</td>
+                                            <td class="text-center">{{ $item->pengembalian ? \Carbon\Carbon::parse($item->pengembalian->tanggalkembali)->format('d/m/Y') : '-' }}</td>
+                                            <td class="text-end fw-bold {{ $nominal > 0 ? 'text-danger' : 'text-success' }}">
+                                                Rp {{ number_format($nominal, 0, ',', '.') }}
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr><td colspan="6" class="text-center py-5">Kosong.</td></tr>
+                                    @endforelse
+                                </tbody>
+                                <tfoot class="bg-light fw-bold">
+                                    <tr>
+                                        <td colspan="3" class="text-end text-uppercase small">Total Buku Kembali:</td>
+                                        <td class="text-center">{{ $totalBuku }} Eks</td>
+                                        <td class="text-end text-uppercase small">Total Denda:</td>
+                                        <td class="text-end text-danger">Rp {{ number_format($grandTotalDenda, 0, ',', '.') }}</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                        @include('partials.laporan-footer')
+                    </div>
+                </div>
+            </div>
+
+            {{-- 3. TAB INVENTARIS --}}
+            <div class="tab-pane fade" id="pills-buku">
+                <div class="modern-card">
+                    <div class="card-body p-lg-5">
+                        <div class="text-center mb-5">
+                            <h4 class="fw-bold text-uppercase mb-1">Inventaris Buku</h4>
+                            <p class="text-muted small">Update Stok Koleksi Terkini</p>
+                            <div class="bg-dark mx-auto" style="height: 3px; width: 40px;"></div>
+                        </div>
+                        <table class="table table-hover align-middle border">
+                            <thead class="bg-dark text-white">
+                                <tr class="text-uppercase small">
+                                    <th class="ps-3">No</th>
+                                    <th>Judul Buku</th>
+                                    <th class="text-center">Total Stok</th>
+                                    <th class="text-center">Tersedia</th>
+                                    <th class="text-center">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($buku_all as $b)
+                                <tr>
+                                    <td class="ps-3">{{ $loop->iteration }}</td>
+                                    <td class="fw-bold">{{ $b->judul }}</td>
+                                    <td class="text-center">{{ $b->stok }}</td>
+                                    <td class="text-center fw-bold text-primary">{{ $b->stok_tersedia }}</td>
+                                    <td class="text-center">
+                                        <span class="badge {{ $b->stok_tersedia > 0 ? 'bg-success' : 'bg-danger' }} px-3 py-2">
+                                            {{ $b->stok_tersedia > 0 ? 'Tersedia' : 'Habis' }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                        @include('partials.laporan-footer')
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Logic tab persistent
+            const urlParams = new URLSearchParams(window.location.search);
+            const activeTabId = urlParams.get('active_tab');
+            if (activeTabId) {
+                const tabTriggerEl = document.querySelector(`button[data-bs-target="#${activeTabId}"]`);
+                if (tabTriggerEl) {
+                    const tab = new bootstrap.Tab(tabTriggerEl);
+                    tab.show();
+                    document.getElementById('active_tab_input').value = activeTabId;
+                }
+            }
+            document.querySelectorAll('button[data-bs-toggle="pill"]').forEach(button => {
+                button.addEventListener('shown.bs.tab', (e) => {
+                    const targetId = e.target.getAttribute('data-bs-target').replace('#', '');
+                    document.getElementById('active_tab_input').value = targetId;
+                });
+            });
         });
-    });
-});
-</script>
+    </script>
 </x-app-layout>

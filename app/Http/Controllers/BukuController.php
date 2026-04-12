@@ -76,6 +76,7 @@ class BukuController extends Controller
         return redirect()->route('buku.index')->with('success', 'Buku berhasil disimpan');
     }
 
+
     public function edit($id)
     {
         $buku = Buku::where('idbuku', $id)->firstOrFail();
@@ -111,18 +112,19 @@ class BukuController extends Controller
      */
     public function show($id)
     {
-        // Ambil data dengan nama variabel $item
-        $item = Buku::with('kategori')->where('idbuku', $id)->firstOrFail();
+        // Cari data buku dan pastikan variabelnya bernama $buku agar nyambung dengan file Blade
+        $buku = Buku::with('kategori')->where('idbuku', $id)->firstOrFail();
 
+        // Jika user adalah anggota, arahkan ke halaman pinjam (pastikan view pinjam_buku juga pakai variabel $buku)
         if (auth()->user()->role === 'anggota') {
-            // Kirim 'item' ke view pinjam_buku
-            return view('pinjam_buku', compact('item'));
+            return view('pinjam_buku', compact('buku'));
         }
 
-        // Kirim 'item' ke view detail admin
-        return view('buku.detail', compact('item'));
+        // Jika admin/petugas, arahkan ke halaman detail (buku.show)
+        // Pastikan nama file view kamu benar, tadi di Blade kamu pakai x-app-layout, 
+        // biasanya filenya di resources/views/buku/show.blade.php
+        return view('buku.detail', compact('buku'));
     }
-
     public function destroy($id)
     {
         Buku::where('idbuku', $id)->firstOrFail()->delete();

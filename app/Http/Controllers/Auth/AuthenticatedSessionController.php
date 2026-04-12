@@ -22,6 +22,9 @@ class AuthenticatedSessionController extends Controller
     /**
      * Handle an incoming authentication request.
      */
+    /**
+     * Handle an incoming authentication request.
+     */
     public function store(LoginRequest $request): RedirectResponse
     {
         $request->authenticate();
@@ -31,15 +34,18 @@ class AuthenticatedSessionController extends Controller
         // Ambil data user yang baru saja login
         $user = $request->user();
 
-        // Logika pengalihan berdasarkan role
+        // Logika pesan sukses berdasarkan nama user
+        $pesan = 'Selamat Datang Kembali, ' . $user->name . '!';
+
+        // Logika pengalihan berdasarkan role dengan tambahan session flash 'success'
         if ($user->role === 'kep_perpus' || $user->role === 'petugas') {
-            // Jika admin atau petugas, arahkan ke dashboard admin
-            return redirect()->intended(route('dashboard', absolute: false));
+            return redirect()->intended(route('dashboard', absolute: false))
+                ->with('success', $pesan);
         }
 
-        // Jika anggota, arahkan ke halaman utama atau dashboard anggota
-        // Pastikan kamu sudah punya route bernama 'welcome' atau 'dashboard_anggota'
-        return redirect()->intended(route('dashboard', absolute: false));
+        // Untuk anggota atau role lainnya
+        return redirect()->intended(route('dashboard_user.index', absolute: false))
+            ->with('success', $pesan);
     }
     /**
      * Destroy an authenticated session.

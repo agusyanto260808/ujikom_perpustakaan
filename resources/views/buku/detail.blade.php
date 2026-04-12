@@ -88,7 +88,7 @@
                                                 <div>
                                                     <small class="text-muted d-block text-uppercase fw-bold" style="font-size: 0.65rem;">Stok Perpustakaan</small>
                                                     <span class="fw-bold {{ $buku->stok > 0 ? 'text-success' : 'text-danger' }}">
-                                                        {{ $buku->stok }} Eksemplar
+                                                        {{ $buku->stok }} Buku
                                                     </span>
                                                 </div>
                                             </div>

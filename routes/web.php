@@ -12,8 +12,8 @@ use Illuminate\Support\Facades\Route;
 
 // 1. Rute Publik
 Route::get('/', function () {
-    return view('welcome'); // Ganti dengan view yang sesuai, misalnya 'welcome' atau 'home'
-})->name('welcome');
+    return view('auth.login');
+});
 
 require __DIR__ . '/auth.php';
 
@@ -22,6 +22,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // --- DASHBOARD MULTI-ROLE ---
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    // Tambahkan ini di dalam group middleware auth di web.php
+    Route::get('/dashboard-user', [DashboardController::class, 'userIndex'])->name('dashboard_user.index');
 
     // --- PROFIL (Semua Role) ---
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -39,14 +41,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/peminjaman/{id}', [PeminjamanController::class, 'destroy'])->name('peminjaman.destroy');
     Route::patch('/peminjaman/{id}', [PeminjamanController::class, 'update'])->name('peminjaman.update');
     Route::get('/riwayat-peminjaman', [PeminjamanController::class, 'riwayat'])->name('riwayat_peminjaman.index');
-
-
-
-
-    // ------------------------------------------------------------------
-
-
-
     Route::resource('buku', BukuController::class);
 
     // 1. Log Peminjaman Keseluruhan (Hanya List)

@@ -1,3 +1,7 @@
+<x-nav-link :href="route('dashboard_user.index')" :active="request()->routeIs('dashboard_user.index')" class="text-black fw-bold">
+    {{ __('Dashboard') }}
+</x-nav-link>
+
 <x-nav-link :href="route('katalog_buku.index')" :active="request()->routeIs('katalog_buku.index')" class="text-black fw-bold">
     {{ __('Katalog Buku') }}
 </x-nav-link>

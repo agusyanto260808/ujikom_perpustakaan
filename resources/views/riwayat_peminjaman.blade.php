@@ -1,132 +1,200 @@
 <x-app-layout>
-    <x-slot name="header">
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-        <style>
-            /* Custom CSS untuk merampingkan tampilan */
-            .table-custom th { font-size: 0.85rem; letter-spacing: 0.05em; color: #6c757d; }
-            .badge-status { min-width: 100px; padding: 0.5em 0.8em; font-weight: 500; }
-            .btn-action { font-size: 0.75rem; padding: 0.4rem 0.8rem; border-radius: 8px; }
-            .text-small { font-size: 0.75rem; }
-        </style>
-        <h5 class="fw-bold text-dark mb-0">Log Peminjaman Buku</h5>
-    </x-slot>
-
-    <div class="bg-light py-4">
-        <div class="container">
-
-            {{-- ALERT --}}
-            @if(session('success'))
-                <div class="alert alert-success border-0 shadow-sm mb-4" role="alert">
-                    {{ session('success') }}
-                </div>
-            @endif
-
-            <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
-                <div class="card-header bg-white py-3 border-bottom-0">
-                    <h6 class="fw-bold text-secondary mb-0">DAFTAR TRANSAKSI</h6>
-                </div>
-
-                <div class="table-responsive">
-                    <table class="table align-middle table-hover mb-0 table-custom">
-                        <thead class="bg-light">
-                            <tr>
-                                <th class="ps-4">NAMA</th>
-                                <th>BUKU</th>
-                                <th class="text-center">PINJAM</th>
-                                <th class="text-center">JATUH TEMPO</th>
-                                <th class="text-center">DENDA</th>
-                                <th class="text-center pe-4">STATUS</th>
-                            </tr>
-                        </thead>
-
-                       <tbody>
-@forelse ($peminjaman as $pinjam)
-    @php
-        $status = trim(strtolower($pinjam->status));
-        $jatuhTempo = \Carbon\Carbon::parse($pinjam->tanggal_jatuh_tempo)->startOfDay();
-        
-        // Identifikasi apakah transaksi sudah selesai
-        $isSelesai = in_array($status, ['kembali', 'selesai', 'lunas']);
-        
-        $totalDenda = 0;
-        $selisihHari = 0;
-
-        if ($isSelesai && $pinjam->pengembalian) {
-            // Ambil data denda dari tabel denda melalui DB (karena relasi hasOneThrough mungkin belum optimal)
-            $dataDenda = DB::table('denda')->where('idpengembalian', $pinjam->pengembalian->idkembali)->first();
-            $totalDenda = $dataDenda ? $dataDenda->jumlah : 0;
-            $selisihHari = $dataDenda ? $dataDenda->hari_terlambat : 0;
-        } else {
-            // Hitung estimasi denda berjalan jika status masih dipinjam/proses
-            $tanggalPatokan = now()->startOfDay();
-            if ($tanggalPatokan->gt($jatuhTempo)) {
-                $selisihHari = $tanggalPatokan->diffInDays($jatuhTempo);
-                $totalDenda = $selisihHari * 2000;
-            }
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <style>
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background-color: #f8fafc; 
         }
-    @endphp {{-- Pastikan penutup @php ada di sini --}}
+        .page-header {
+            padding: 2rem 0;
+            background: #ffffff;
+            border-bottom: 1px solid #e2e8f0;
+            margin-bottom: 2rem;
+        }
+        .card-main {
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            background: #ffffff;
+        }
+        .table thead th {
+            background-color: #f8fafc;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #64748b;
+            letter-spacing: 0.05em;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .table tbody td {
+            padding: 1.25rem 1.5rem;
+            vertical-align: middle;
+            color: #1e293b;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .book-title {
+            font-weight: 600;
+            color: #0f172a;
+            display: block;
+        }
+        .user-name {
+            font-weight: 700;
+            color: #4f46e5; /* Indigo */
+        }
+        .badge-modern {
+            padding: 0.5em 1em;
+            font-weight: 600;
+            border-radius: 8px;
+            font-size: 0.75rem;
+        }
+        .btn-indigo {
+            background-color: #4f46e5;
+            color: white;
+            border-radius: 10px;
+            padding: 0.6rem 1.2rem;
+            font-weight: 600;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+            border: none;
+        }
+        .btn-indigo:hover {
+            background-color: #4338ca;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+            color: white;
+        }
+    </style>
 
-    <tr>
-        <td class="ps-4 fw-bold text-dark">
-            {{ $pinjam->user->name ?? 'User' }}
-        </td>
-
-        <td>
-            <div class="fw-semibold">{{ $pinjam->buku->judul }}</div>
-            <span class="text-muted text-small">{{ $pinjam->jumlah }} Buku</span>
-        </td>
-
-        <td class="text-center text-muted text-small">
-            {{ \Carbon\Carbon::parse($pinjam->tanggal_pinjam)->format('d M Y') }}
-        </td>
-
-        <td class="text-center">
-            {{-- SEKARANG $totalDenda SUDAH TERDEFINISI DI SINI --}}
-            <span class="text-small {{ $totalDenda > 0 && !$isSelesai ? 'text-danger fw-bold' : 'text-muted' }}">
-                {{ $jatuhTempo->format('d M Y') }}
-            </span>
-        </td>
-
-        <td class="text-center">
-            @if($totalDenda == 0)
-                <span class="text-success text-small">Aman</span>
-            @elseif($isSelesai)
-                <span class="badge bg-success-subtle text-success border border-success-subtle px-2">Lunas</span>
-            @else
-                <div class="text-danger fw-bold mb-0" style="font-size: 0.85rem;">
-                    Rp {{ number_format($totalDenda, 0, ',', '.') }}
+    <div class="page-header">
+        {{-- <div class="container">
+            <div class="d-flex align-items-center gap-3">
+                <div class="bg-indigo text-white p-3 rounded-4 shadow-sm" style="background: #4f46e5;">
+                    <i class="bi bi-journal-text fs-4"></i>
                 </div>
-                <div class="text-danger text-small opacity-75">Telat {{ $selisihHari }} Hari</div>
-            @endif
-        </td>
-
-        <td class="text-center pe-4" style="width: 180px;">
-            @if($status == 'dipinjam')
-                <form action="{{ route('pengembalian.ajukan', $pinjam->idpinjam) }}" method="POST">
-                    @csrf
-                    <button type="submit" class="btn btn-primary btn-action w-100 shadow-sm">Ajukan Kembali</button>
-                </form>
-            @elseif($status == 'proses kembali')
-                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle badge-status rounded-pill">Diproses Petugas</span>
-            @elseif($isSelesai)
-                <span class="badge bg-success-subtle text-success border border-success-subtle badge-status rounded-pill">Selesai</span>
-            @else
-                <span class="badge bg-secondary badge-status rounded-pill text-small">{{ ucfirst($status) }}</span>
-            @endif
-        </td>
-    </tr>
-@empty
-    @endforelse
-</tbody>
-                    </table>
+                <div>
+                    <h4 class="fw-bold mb-0">Log Peminjaman</h4>
+                    <p class="text-muted small mb-0">Pantau dan kelola semua transaksi buku Anda</p>
                 </div>
-
-                @if($peminjaman->hasPages())
-                    <div class="card-footer bg-white py-3">
-                        {{ $peminjaman->links() }}
-                    </div>
-                @endif
             </div>
+        </div> --}}
+    </div>
+
+    <div class="container pb-5 mt-5">
+        @if(session('success'))
+            <div class="alert alert-success border-0 shadow-sm rounded-4 mb-4 d-flex align-items-center gap-2" role="alert">
+                <i class="bi bi-check-circle-fill"></i>
+                <div>{{ session('success') }}</div>
+            </div>
+        @endif
+
+        <div class="card-main">
+            <div class="table-responsive">
+                <table class="table mb-0">
+                    <thead>
+                        <tr>
+                            <th>Informasi Peminjam</th>
+                            <th>Buku & Jumlah</th>
+                            <th class="text-center">Tgl Pinjam</th>
+                            <th class="text-center">Jatuh Tempo</th>
+                            <th class="text-center">Denda</th>
+                            <th class="text-end">Aksi / Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($peminjaman as $pinjam)
+                        @php
+                            $status = trim(strtolower($pinjam->status));
+                            $jatuhTempo = \Carbon\Carbon::parse($pinjam->tanggal_jatuh_tempo)->startOfDay();
+                            $isSelesai = in_array($status, ['kembali', 'selesai', 'lunas']);
+                            
+                            $totalDenda = 0;
+                            $selisihHari = 0;
+
+                            if ($isSelesai && $pinjam->pengembalian) {
+                                $dataDenda = DB::table('denda')->where('idpengembalian', $pinjam->pengembalian->idkembali)->first();
+                                $totalDenda = $dataDenda ? $dataDenda->jumlah : 0;
+                                $selisihHari = $dataDenda ? $dataDenda->hari_terlambat : 0;
+                            } else {
+                                $tanggalPatokan = now()->startOfDay();
+                                if ($tanggalPatokan->gt($jatuhTempo)) {
+                                    $selisihHari = $tanggalPatokan->diffInDays($jatuhTempo);
+                                    $totalDenda = $selisihHari * 2000;
+                                }
+                            }
+                        @endphp
+                        <tr>
+                            <td>
+                                <div class="user-name">{{ $pinjam->user->name ?? 'User' }}</div>
+                                <div class="text-muted small">ID: #TRX-{{ $pinjam->idpinjam }}</div>
+                            </td>
+                            <td>
+                                <span class="book-title">{{ $pinjam->buku->judul }}</span>
+                                <span class="badge bg-light text-dark border p-1 px-2 mt-1" style="font-size: 0.7rem;">
+                                    <i class="bi bi-book me-1"></i>{{ $pinjam->jumlah }} Buku
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                <span class="small fw-medium text-secondary">
+                                    {{ \Carbon\Carbon::parse($pinjam->tanggal_pinjam)->format('d M, Y') }}
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                <span class="small {{ $totalDenda > 0 && !$isSelesai ? 'text-danger fw-bold' : 'text-secondary' }}">
+                                    {{ $jatuhTempo->format('d M, Y') }}
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                @if($totalDenda == 0)
+                                    <span class="text-success small fw-semibold"><i class="bi bi-check2-all me-1"></i>Tidak ada</span>
+                                @elseif($isSelesai)
+                                    <span class="badge bg-success-subtle text-success badge-modern">Lunas</span>
+                                @else
+                                    <div class="text-danger fw-bold mb-0">Rp {{ number_format($totalDenda, 0, ',', '.') }}</div>
+                                    <div class="text-danger opacity-75" style="font-size: 0.7rem;">Telat {{ $selisihHari }} Hari</div>
+                                @endif
+                            </td>
+                            <td class="text-end">
+                                @if($status == 'dipinjam')
+                                    <form action="{{ route('pengembalian.ajukan', $pinjam->idpinjam) }}" method="POST">
+                                        @csrf
+                                        <button type="submit" class="btn btn-indigo shadow-sm">
+                                            Kembalikan <i class="bi bi-arrow-right-short ms-1"></i>
+                                        </button>
+                                    </form>
+                                @elseif($status == 'proses kembali')
+                                    <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle badge-modern">
+                                        <i class="bi bi-clock-history me-1"></i> Menunggu Verifikasi
+                                    </span>
+                                @elseif($isSelesai)
+                                    <span class="badge bg-indigo-subtle text-primary border border-primary-subtle badge-modern" style="background: #eef2ff; color: #4f46e5 !important;">
+                                        <i class="bi bi-check-circle me-1"></i> Selesai
+                                    </span>
+                                @else
+                                    <span class="badge bg-secondary-subtle text-secondary badge-modern">{{ ucfirst($status) }}</span>
+                                @endif
+                            </td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="6" class="text-center py-5">
+                                <img src="https://cdn-icons-png.flaticon.com/512/7486/7486744.png" width="80" class="opacity-25 mb-3" alt="Empty">
+                                <p class="text-muted">Belum ada riwayat transaksi peminjaman.</p>
+                            </td>
+                        </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+            
+            @if($peminjaman->hasPages())
+                <div class="p-4 border-top bg-light-subtle rounded-bottom-4">
+                    {{ $peminjaman->links() }}
+                </div>
+            @endif
         </div>
     </div>
 </x-app-layout>

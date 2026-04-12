@@ -10,27 +10,8 @@
             </div>
 
             {{-- Bagian Kanan: Status & Links --}}
-            <div class="col-md-6 text-center text-md-end">
-                <ul class="list-inline mb-0">
-                    <li class="list-inline-item">
-                        <span class="badge bg-light text-success border px-3 py-2 rounded-pill fw-medium">
-                            <span class="d-inline-block bg-success rounded-circle me-1" style="width: 8px; height: 8px;"></span>
-                            Sistem Online
-                        </span>
-                    </li>
-                    <li class="list-inline-item ms-md-3">
-                        <a href="#" class="text-decoration-none text-muted small hover-dark">Bantuan</a>
-                    </li>
-                    <li class="list-inline-item ms-3">
-                        <a href="#" class="text-decoration-none text-muted small hover-dark">Syarat & Ketentuan</a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-        
-        {{-- Garis Tipis Tambahan (Opsional) --}}
-        <div class="row mt-3">
-            <div class="col-12 text-center">
+            
+           <div class="col-md-6 text-center text-md-end">
                 <p class="text-uppercase ls-wide text-muted" style="font-size: 0.65rem; letter-spacing: 1px;">
                     Dikembangkan untuk Manajemen Perpustakaan Digital
                 </p>
