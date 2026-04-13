@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
+use Illuminate\Support\Facades\Auth;
 
 class KelolaAkunController extends Controller
 {
@@ -14,11 +15,15 @@ class KelolaAkunController extends Controller
      */
     public function index(Request $request)
     {
-        // Ubah default ke 'anggota'
         $role = $request->get('role', 'anggota');
 
-        $users = \App\Models\User::where('role', $role)
-            ->where('role', '!=', 'admin')
+        // PROTEKSI: Petugas hanya boleh melihat daftar 'anggota'
+        if (Auth::user()->role == 'petugas' && $role !== 'anggota') {
+            return redirect()->route('kelola_akun.index', ['role' => 'anggota']);
+        }
+
+        $users = User::where('role', $role)
+            ->where('role', '!=', 'admin') // Admin tidak muncul di daftar mana pun
             ->latest()
             ->paginate(10)
             ->withQueryString();
@@ -26,16 +31,13 @@ class KelolaAkunController extends Controller
         return view('kelola_akun.index', compact('users', 'role'));
     }
 
-    /**
-     * Menampilkan form pendaftaran akun baru (HANYA VIEW)
-     */
     public function create()
     {
         return view('kelola_akun.create');
     }
 
     /**
-     * Menyimpan data akun baru ke database
+     * Menyimpan data akun baru
      */
     public function store(Request $request)
     {
@@ -43,44 +45,37 @@ class KelolaAkunController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users',
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            // Ganti 'siswa' menjadi 'anggota'
-            'role' => 'required|in:admin,petugas,anggota',
+            'role' => 'required|in:petugas,anggota', // Admin tidak boleh dibuat lewat sini
             'nisn' => 'nullable|required_if:role,anggota|unique:users,nisn',
         ]);
+
+        $role = $request->role;
+
+        // PROTEKSI: Jika petugas yang buat, paksa role jadi 'anggota'
+        if (Auth::user()->role == 'petugas') {
+            $role = 'anggota';
+        }
 
         User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'role' => $request->role,
-            // Ganti pengecekan 'siswa' menjadi 'anggota'
-            'nisn' => ($request->role === 'anggota') ? $request->nisn : null,
+            'role' => $role,
+            'nisn' => ($role === 'anggota') ? $request->nisn : null,
         ]);
 
-        return redirect()->route('kelola_akun.index')->with('success', 'Akun berhasil dibuat!');
+        return redirect()->route('kelola_akun.index', ['role' => $role])->with('success', 'Akun berhasil dibuat!');
     }
 
-    /**
-     * Menghapus akun pengguna
-     */
-    public function destroy($id)
-    {
-        $user = User::findOrFail($id);
-
-        if (auth()->id() == $user->id) {
-            return redirect()->back()->with('error', 'Anda tidak bisa menghapus akun sendiri!');
-        }
-
-        $user->delete();
-        return redirect()->route('kelola_akun.index')->with('success', 'Akun berhasil dihapus.');
-    }
-
-    /**
-     * Menampilkan form edit
-     */
     public function edit($id)
     {
         $user = User::findOrFail($id);
+
+        // PROTEKSI: Petugas tidak boleh edit akun sesama Petugas atau Kepala
+        if (Auth::user()->role == 'petugas' && $user->role !== 'anggota') {
+            return redirect()->route('kelola_akun.index')->with('error', 'Anda tidak memiliki akses edit akun ini.');
+        }
+
         return view('kelola_akun.edit', compact('user'));
     }
 
@@ -94,18 +89,23 @@ class KelolaAkunController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $user->id,
-            // Ganti 'siswa' menjadi 'anggota'
-            'role' => 'required|in:admin,petugas,anggota',
+            'role' => 'required|in:petugas,anggota',
             'nisn' => 'nullable|required_if:role,anggota|unique:users,nisn,' . $user->id,
-            'password' => ['nullable', 'confirmed', \Illuminate\Validation\Rules\Password::defaults()],
+            'password' => ['nullable', 'confirmed', Rules\Password::defaults()],
         ]);
+
+        $role = $request->role;
+
+        // PROTEKSI: Petugas tidak boleh mengubah role ke selain 'anggota'
+        if (Auth::user()->role == 'petugas') {
+            $role = 'anggota';
+        }
 
         $data = [
             'name' => $request->name,
             'email' => $request->email,
-            'role' => $request->role,
-            // Ganti pengecekan 'siswa' menjadi 'anggota'
-            'nisn' => ($request->role === 'anggota') ? $request->nisn : null,
+            'role' => $role,
+            'nisn' => ($role === 'anggota') ? $request->nisn : null,
         ];
 
         if ($request->filled('password')) {
@@ -114,6 +114,23 @@ class KelolaAkunController extends Controller
 
         $user->update($data);
 
-        return redirect()->route('kelola_akun.index')->with('success', 'Akun ' . $user->name . ' berhasil diperbarui!');
+        return redirect()->route('kelola_akun.index', ['role' => $role])->with('success', 'Akun berhasil diperbarui!');
+    }
+
+    public function destroy($id)
+    {
+        $user = User::findOrFail($id);
+
+        // PROTEKSI: Petugas tidak boleh hapus akun selain 'anggota'
+        if (Auth::user()->role == 'petugas' && $user->role !== 'anggota') {
+            return redirect()->back()->with('error', 'Akses ditolak.');
+        }
+
+        if (auth()->id() == $user->id) {
+            return redirect()->back()->with('error', 'Anda tidak bisa menghapus akun sendiri!');
+        }
+
+        $user->delete();
+        return redirect()->back()->with('success', 'Akun berhasil dihapus.');
     }
 }

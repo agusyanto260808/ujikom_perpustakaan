@@ -18,10 +18,12 @@
                             <form action="{{ route('kelola_akun.store') }}" method="POST">
                                 @csrf
 
-                                <div class="d-flex align-items-center mb-4">
-                                    <div class="bg-primary rounded-circle me-3" style="width: 10px; height: 30px;"></div>
-                                    <h5 class="fw-bold mb-0">Formulir Pendaftaran User</h5>
-                                </div>
+                               <div class="container mt-5 pt-5"> 
+    <div class="d-flex align-items-center mb-4">
+        <div class="bg-primary rounded-pill me-3" style="width: 6px; height: 30px;"></div>
+        <h5 class="fw-bold mb-0">Formulir Pendaftaran User</h5>
+    </div>
+    </div>
 
                                 {{-- Grid 2 Kolom --}}
                                 <div class="row g-4">
@@ -49,18 +51,28 @@
                                     </div>
 
                                     {{-- Role / Jabatan --}}
-                                    <div class="col-md-6">
-                                        <label for="role" class="form-label fw-semibold small text-muted text-uppercase">Role / Jabatan</label>
-                                        <select name="role" id="role" 
-                                            class="form-select form-select-lg @error('role') is-invalid @enderror" 
-                                            onchange="toggleNisn(this.value)">
-                                            <option value="anggota" {{ old('role') == 'anggota' ? 'selected' : '' }}>Siswa</option>
-                                            <option value="petugas" {{ old('role') == 'petugas' ? 'selected' : '' }}>Petugas</option>
-                                        </select>
-                                        @error('role')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                        @enderror
-                                    </div>
+                                   {{-- Role / Jabatan --}}
+<div class="col-md-6">
+    <label for="role" class="form-label fw-semibold small text-muted text-uppercase">Role / Jabatan</label>
+    <select name="role" id="role" 
+        class="form-select form-select-lg @error('role') is-invalid @enderror" 
+        onchange="toggleNisn(this.value)">
+        
+        {{-- Jika yang login adalah Petugas, hanya tampilkan pilihan Siswa --}}
+        @if(Auth::user()->role == 'petugas')
+            <option value="anggota" {{ old('role') == 'anggota' ? 'selected' : '' }}>Siswa</option>
+        
+        {{-- Jika yang login adalah Kepala Perpustakaan atau Admin --}}
+        @else
+            <option value="anggota" {{ old('role') == 'anggota' ? 'selected' : '' }}>Siswa</option>
+            <option value="petugas" {{ old('role') == 'petugas' ? 'selected' : '' }}>Petugas</option>
+        @endif
+    </select>
+    
+    @error('role')
+        <div class="invalid-feedback">{{ $message }}</div>
+    @enderror
+</div>
 
                                     {{-- NISN --}}
                                     <div class="col-md-6" id="nisn_field">

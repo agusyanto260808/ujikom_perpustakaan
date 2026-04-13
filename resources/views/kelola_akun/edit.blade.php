@@ -44,19 +44,33 @@
                                     </div>
 
                                     {{-- Role --}}
-                                    <div class="col-md-6">
-                                        <label for="role" class="form-label fw-semibold text-secondary small text-uppercase">Role / Jabatan</label>
-                                        <select name="role" id="role" 
-                                            class="form-select form-select-lg @error('role') is-invalid @enderror" 
-                                            onchange="toggleNisn(this.value)">
-                                            <option value="anggota" {{ old('role', $user->role) == 'anggota' ? 'selected' : '' }}>Siswa</option>
-                                            <option value="petugas" {{ old('role', $user->role) == 'petugas' ? 'selected' : '' }}>Petugas</option>
-                                        </select>
-                                        @error('role')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                        @enderror
-                                    </div>
+                      {{-- Role --}}
+<div class="col-md-6">
+    <label for="role" class="form-label fw-semibold text-secondary small text-uppercase">Role / Jabatan</label>
+    <select name="role" id="role" 
+        class="form-select form-select-lg @error('role') is-invalid @enderror" 
+        onchange="toggleNisn(this.value)">
+        
+        {{-- Jika yang login adalah Petugas --}}
+        @if(Auth::user()->role == 'petugas')
+            <option value="anggota" {{ old('role', $user->role) == 'anggota' ? 'selected' : '' }}>Siswa</option>
+            {{-- Jika user yang diedit ternyata petugas, tampilkan saja opsinya agar tidak error tapi tidak bisa diubah ke yang lain --}}
+            @if($user->role == 'petugas')
+                <option value="petugas" selected>Petugas</option>
+            @endif
 
+        {{-- Jika yang login adalah Kepala Perpustakaan --}}
+        @else
+            <option value="anggota" {{ old('role', $user->role) == 'anggota' ? 'selected' : '' }}>Siswa</option>
+            <option value="petugas" {{ old('role', $user->role) == 'petugas' ? 'selected' : '' }}>Petugas</option>
+           
+        @endif
+    </select>
+    
+    @error('role')
+        <div class="invalid-feedback">{{ $message }}</div>
+    @enderror
+</div>
                                     {{-- NISN --}}
                                     <div class="col-md-6" id="nisn_field">
                                         <label for="nisn" class="form-label fw-semibold text-secondary small text-uppercase">NISN</label>

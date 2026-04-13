@@ -191,15 +191,15 @@
                                 </span>
                             </td>
                             <td class="text-center">
-                                @if($nominalDenda > 0)
+                                @if($nominalDenda > 0) 
+                                    <span class="badge bg-success-subtle text-success px-3 py-2 rounded-pill">
+                                        <i class="bi bi-shield-check me-1"></i> Tepat Waktu
+                                    </span>
+                                @else
                                     <span class="badge bg-danger text-white px-3 py-2 rounded-pill">
                                         Rp {{ number_format($nominalDenda, 0, ',', '.') }}
                                     </span>
                                     <div class="text-danger small mt-1" style="font-size: 0.7rem;">Terlambat {{ $hariTerlambat }} Hari</div>
-                                @else
-                                    <span class="badge bg-success-subtle text-success px-3 py-2 rounded-pill">
-                                        <i class="bi bi-shield-check me-1"></i> Tepat Waktu
-                                    </span>
                                 @endif
                             </td>
                             <td class="text-center pe-4">

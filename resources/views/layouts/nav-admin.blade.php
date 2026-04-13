@@ -19,8 +19,8 @@
 <x-nav-link :href="route('laporan.index')" :active="request()->routeIs('laporan.index')" class="text-black fw-bold">
     {{ __('Laporan') }}
 </x-nav-link>
-
-@if(Auth::user()->role == 'kep_perpus')
+{{-- Mengizinkan Petugas ATAU Kepala Perpus melihat menu Kelola Akun --}}
+@if(Auth::user()->role == 'kep_perpus' || Auth::user()->role == 'petugas')
     <div class="hidden sm:flex sm:items-center sm:ms-6">
         <x-dropdown align="right" width="48">
             <x-slot name="trigger">
@@ -35,12 +35,17 @@
             </x-slot>
 
             <x-slot name="content">
+                {{-- Keduanya (Petugas & Kep Perpus) bisa mengelola Akun User/Anggota --}}
                 <x-dropdown-link :href="route('kelola_akun.index', ['role' => 'anggota'])" class="fw-bold">
                     {{ __('Akun User') }}
                 </x-dropdown-link>
-                <x-dropdown-link :href="route('kelola_akun.index', ['role' => 'petugas'])" class="fw-bold">
-                    {{ __('Akun Petugas') }}
-                </x-dropdown-link>
+
+                {{-- Khusus Kepala Perpus saja yang bisa mengelola Akun Petugas --}}
+                @if(Auth::user()->role == 'kep_perpus')
+                    <x-dropdown-link :href="route('kelola_akun.index', ['role' => 'petugas'])" class="fw-bold">
+                        {{ __('Akun Petugas') }}
+                    </x-dropdown-link>
+                @endif
             </x-slot>
         </x-dropdown>
     </div>

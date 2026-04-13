@@ -5,31 +5,31 @@
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{{ route('dashboard') }}" class="text-decoration-none">Home</a></li>
             <li class="breadcrumb-item"><a href="{{ route('katalog_buku.index') }}" class="text-decoration-none">Katalog</a></li>
-            <li class="breadcrumb-item active" aria-current="page">{{ $item->judul }}</li>
+            <li class="breadcrumb-item active" aria-current="page">{{ $buku->judul }}</li>
         </ol>
     </nav>
 
     <div class="row g-5">
         <div class="col-md-4">
             <div class="card shadow-sm border-0 sticky-top" style="top: 20px;">
-                <img src="{{ $item->gambar ? asset('storage/'.$item->gambar) : asset('images/default.png') }}" 
-                     class="card-img-top rounded shadow" alt="{{ $item->judul }}">
+                <img src="{{ $buku->gambar ? asset('storage/'.$buku->gambar) : asset('images/default.png') }}" 
+                     class="card-img-top rounded shadow" alt="{{ $buku->judul }}">
             </div>
         </div>
 
         <div class="col-md-5">
-            <p class="text-primary fw-bold text-uppercase small mb-1">{{ $item->penulis }}</p>
-            <h1 class="display-5 fw-bold mb-4">{{ $item->judul }}</h1>
+            <p class="text-primary fw-bold text-uppercase small mb-1">{{ $buku->penulis }}</p>
+            <h1 class="display-5 fw-bold mb-4">{{ $buku->judul }}</h1>
 
             <h5 class="fw-bold border-bottom pb-2 mb-3">Detail Buku</h5>
             <table class="table table-borderless small">
                 <tr>
                     <td class="text-muted ps-0">Penerbit</td>
-                    <td class="fw-bold text-end">{{ $item->penerbit }}</td>
+                    <td class="fw-bold text-end">{{ $buku->penerbit }}</td>
                 </tr>
                 <tr>
                     <td class="text-muted ps-0">Tahun Terbit</td>
-                    <td class="fw-bold text-end">{{ $item->tahun_terbit ?? $item->tahun }}</td>
+                    <td class="fw-bold text-end">{{ $buku->tahun_terbit ?? $buku->tahun }}</td>
                 </tr>
                 <tr>
                     <td class="text-muted ps-0">Kategori</td>
@@ -39,9 +39,9 @@
 <tr>
     <td class="text-muted ps-0">Status Stok</td>
     <td class="fw-bold text-end">
-        @if($item->stok_tersedia > 0)
+        @if($buku->stok_tersedia > 0)
             <span class="badge bg-success-soft text-success border border-success px-3">
-                Tersedia: {{ $item->stok_tersedia }}
+                Tersedia: {{ $buku->stok_tersedia }}
             </span>
         @else
             <span class="badge bg-danger text-white px-3">Habis (Sedang Dipinjam)</span>
@@ -53,7 +53,7 @@
             <div class="mt-4">
                 <h5 class="fw-bold">Sinopsis / Deskripsi</h5>
                 <p class="text-secondary leading-relaxed">
-                    Buku <strong>{{ $item->judul }}</strong> merupakan karya literatur berkualitas yang disusun oleh <strong>{{ $item->penulis }}</strong>. 
+                    Buku <strong>{{ $buku->judul }}</strong> merupakan karya literatur berkualitas yang disusun oleh <strong>{{ $buku->penulis }}</strong>. 
                     Koleksi ini tersedia untuk mendukung kegiatan belajar mengajar di lingkungan sekolah.
                 </p>
             </div>
@@ -82,15 +82,15 @@
                                 </div>
                             </div>
                         </div>
-                    @elseif($item->stok <= 0)
+                    @elseif($buku->stok <= 0)
                         <div class="text-center py-3">
                             <button disabled class="btn btn-secondary w-100 py-3 fw-bold rounded-3">STOK HABIS</button>
                             <p class="text-muted small mt-2">Cek kembali dalam beberapa hari.</p>
                         </div>
                     @else
-                     <form action="{{ route('peminjaman.store') }}" method="POST" onsubmit="return confirmLoan()">
+                    <form action="{{ route('peminjaman.store') }}" method="POST" onsubmit="confirmLoan(event)">
     @csrf
-    <input type="hidden" name="idbuku" value="{{ $item->idbuku }}">
+    <input type="hidden" name="idbuku" value="{{ $buku->idbuku }}">
     
     {{-- Input Hidden untuk Controller --}}
     <input type="hidden" name="tanggal_kembali" id="tanggal_kembali_hidden">
@@ -103,13 +103,13 @@
         <button class="btn btn-outline-secondary" type="button" onclick="changeValue(-1)">-</button>
         {{-- Gunakan stok_tersedia sebagai batas maksimal --}}
         <input type="number" name="jumlah" id="qty" value="1" min="1" 
-               max="{{ $item->stok_tersedia }}" 
+               max="{{ $buku->stok_tersedia }}" 
                oninput="validateQty(this)"
                class="form-control text-center fw-bold shadow-none">
         <button class="btn btn-outline-secondary" type="button" onclick="changeValue(1)">+</button>
     </div>
     <div id="qty-error" class="text-danger small mt-1 d-none">
-        <i class="bi bi-exclamation-circle"></i> Stok tersedia hanya {{ $item->stok_tersedia }}.
+        <i class="bi bi-exclamation-circle"></i> Stok tersedia hanya {{ $buku->stok_tersedia }}.
     </div>
 </div>
 
@@ -191,7 +191,7 @@
 
     function confirmLoan() {
         const qty = document.getElementById('qty').value;
-        const bookTitle = "{{ $item->judul }}";
+        const bookTitle = "{{ $buku->judul }}";
         
         return confirm(`Apakah Anda yakin ingin meminjam ${qty} buku "${bookTitle}"?`);
     }
@@ -279,4 +279,57 @@ function setDayLimit(max) {
     daysInput.addEventListener('input', calculateDueDate);
     daysInput.addEventListener('change', calculateDueDate);
 });
+function confirmLoan(event) {
+    // Mencegah form terkirim otomatis
+    event.preventDefault();
+    
+    const form = event.target;
+    const qty = document.getElementById('qty').value;
+    const days = document.getElementById('days').value;
+    const targetDate = document.getElementById('target-date').innerText;
+    const bookTitle = "{{ $buku->judul }}";
+
+    Swal.fire({
+        title: 'Konfirmasi Peminjaman',
+        html: `
+            <div class="text-start">
+                <p>Apakah Anda yakin ingin meminjam buku ini?</p>
+                <table class="table table-sm borderless small">
+                    <tr><td><b>Judul</b></td><td>: ${bookTitle}</td></tr>
+                    <tr><td><b>Jumlah</b></td><td>: ${qty} Buku</td></tr>
+                    <tr><td><b>Durasi</b></td><td>: ${days} Hari</td></tr>
+                    <tr><td><b>Kembali</b></td><td>: <span class="text-primary fw-bold">${targetDate}</span></td></tr>
+                </table>
+            </div>
+        `,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#198754', // Warna hijau Bootstrap
+        cancelButtonColor: '#d33',
+        confirmButtonText: '<i class="bi bi-check-circle"></i> Ya, Pinjam!',
+        cancelButtonText: 'Batal',
+        reverseButtons: true,
+        showClass: {
+            popup: 'animate__animated animate__fadeInDown'
+        },
+        hideClass: {
+            popup: 'animate__animated animate__fadeOutUp'
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Tampilkan loading sebentar sebelum submit
+            Swal.fire({
+                title: 'Memproses...',
+                text: 'Mohon tunggu sebentar',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+            form.submit();
+        }
+    });
+}
 </script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
