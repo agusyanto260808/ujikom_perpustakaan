@@ -106,26 +106,28 @@
                     </thead>
                     <tbody>
                         @forelse ($peminjaman as $pinjam)
-                        @php
-                            $status = trim(strtolower($pinjam->status));
-                            $jatuhTempo = \Carbon\Carbon::parse($pinjam->tanggal_jatuh_tempo)->startOfDay();
-                            $isSelesai = in_array($status, ['kembali', 'selesai', 'lunas']);
-                            
-                            $totalDenda = 0;
-                            $selisihHari = 0;
-
-                            if ($isSelesai && $pinjam->pengembalian) {
-                                $dataDenda = DB::table('denda')->where('idpengembalian', $pinjam->pengembalian->idkembali)->first();
-                                $totalDenda = $dataDenda ? $dataDenda->jumlah : 0;
-                                $selisihHari = $dataDenda ? $dataDenda->hari_terlambat : 0;
-                            } else {
-                                $tanggalPatokan = now()->startOfDay();
-                                if ($tanggalPatokan->gt($jatuhTempo)) {
-                                    $selisihHari = $tanggalPatokan->diffInDays($jatuhTempo);
-                                    $totalDenda = $selisihHari * 2000;
-                                }
-                            }
-                        @endphp
+   @php
+    $status = trim(strtolower($pinjam->status));
+    $jatuhTempo = \Carbon\Carbon::parse($pinjam->tanggal_jatuh_tempo)->startOfDay();
+    $isSelesai = in_array($status, ['kembali', 'selesai', 'lunas']);
+    
+    // Ambil denda langsung dari kolom di tabel peminjaman
+    $totalDenda = $pinjam->denda ?? 0; 
+    
+    $selisihHari = 0;
+    if (!$isSelesai) {
+        // Jika masih dipinjam, hitung denda berjalan (Real-time) untuk tampilan saja
+        $hariIni = now()->startOfDay();
+        if ($hariIni->gt($jatuhTempo)) {
+            $selisihHari = $hariIni->diffInDays($jatuhTempo);
+            $totalDenda = $selisihHari * 2000;
+        }
+    } else {
+        // Jika sudah selesai, kita asumsikan selisih hari dihitung dari nominal denda
+        // atau Anda bisa menambahkan kolom 'hari_terlambat' di tabel peminjaman jika ingin lebih akurat
+        $selisihHari = $totalDenda / 2000;
+    }
+@endphp
                         <tr>
                             <td>
                                 <div class="user-name">{{ $pinjam->user->name ?? 'User' }}</div>
@@ -148,15 +150,26 @@
                                 </span>
                             </td>
                             <td class="text-center">
-                                @if($totalDenda == 0)
-                                    <span class="text-success small fw-semibold"><i class="bi bi-check2-all me-1"></i>Tidak ada</span>
-                                @elseif($isSelesai)
-                                    <span class="badge bg-success-subtle text-success badge-modern">Lunas</span>
-                                @else
-                                    <div class="text-danger fw-bold mb-0">Rp {{ number_format($totalDenda, 0, ',', '.') }}</div>
-                                    <div class="text-danger opacity-75" style="font-size: 0.7rem;">Telat {{ $selisihHari }} Hari</div>
-                                @endif
-                            </td>
+    @if($totalDenda == 0)
+        <span class="text-success small fw-semibold">
+            <i class="bi bi-check2-all me-1"></i>Tidak ada
+        </span>
+    @elseif($isSelesai)
+        {{-- Menggunakan abs() agar jika di DB negatif tetap tampil positif --}}
+        <div class="text-success fw-bold mb-0">
+            Rp {{ number_format(abs($totalDenda), 0, ',', '.') }}
+        </div>
+        <span class="badge bg-success-subtle text-success badge-modern">Lunas</span>
+    @else
+        {{-- Menggunakan abs() untuk menghilangkan tanda minus --}}
+        <div class="text-danger fw-bold mb-0">
+            Rp {{ number_format(abs($totalDenda), 0, ',', '.') }}
+        </div>
+        <div class="text-danger opacity-75" style="font-size: 0.7rem;">
+            Telat {{ abs($selisihHari) }} Hari
+        </div>
+    @endif
+</td>
                             <td class="text-end">
                                 @if($status == 'dipinjam')
                                     <form action="{{ route('pengembalian.ajukan', $pinjam->idpinjam) }}" method="POST">

@@ -162,69 +162,67 @@
                     </thead>
                     <tbody>
                         @forelse ($pengembalian as $item)
-                        @php
-                            $tglJatuhTempo = \Carbon\Carbon::parse($item->tanggal_jatuh_tempo)->startOfDay();
-                            $hariIni = now()->startOfDay();
-                            $isTerlambat = $hariIni->gt($tglJatuhTempo);
-                            $hariTerlambat = $isTerlambat ? $hariIni->diffInDays($tglJatuhTempo) : 0;
-                            $nominalDenda = $hariTerlambat * 2000;
-                        @endphp
-                        <tr>
-                            <td class="ps-4 text-muted small">{{ $loop->iteration }}</td>
-                            <td>
-                                <div class="d-flex align-items-center">
-                                    <div class="status-avatar me-3">
-                                        <i class="bi bi-person-check-fill"></i>
-                                    </div>
-                                    <div>
-                                        <div class="fw-bold text-dark">{{ $item->user->name ?? 'N/A' }}</div>
-                                        <div class="text-muted small">#ID-{{ $item->idpinjam }}</div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="fw-semibold text-dark">{{ $item->buku->judul ?? '-' }}</div>
-                            </td>
-                            <td class="text-center">
-                                <span class="{{ $isTerlambat ? 'badge bg-danger-subtle text-danger' : 'text-secondary' }} px-3 py-2 rounded-pill small fw-medium">
-                                    {{ $tglJatuhTempo->format('d/m/Y') }}
-                                </span>
-                            </td>
-                            <td class="text-center">
-                                @if($nominalDenda > 0) 
-                                    <span class="badge bg-success-subtle text-success px-3 py-2 rounded-pill">
-                                        <i class="bi bi-shield-check me-1"></i> Tepat Waktu
-                                    </span>
-                                @else
-                                    <span class="badge bg-danger text-white px-3 py-2 rounded-pill">
-                                        Rp {{ number_format($nominalDenda, 0, ',', '.') }}
-                                    </span>
-                                    <div class="text-danger small mt-1" style="font-size: 0.7rem;">Terlambat {{ $hariTerlambat }} Hari</div>
-                                @endif
-                            </td>
-                            <td class="text-center pe-4">
-                                @if($item->status == 'proses kembali')
-                                    <form action="{{ route('pengembalian.store', $item->idpinjam) }}" method="POST">
-                                        @csrf
-                                        <button type="submit" class="btn btn-success btn-modern shadow-sm btn-sm px-4">
-                                            Konfirmasi Terima
-                                        </button>
-                                    </form>
-                                @else
-                                    <span class="text-success small fw-bold">
-                                        <i class="bi bi-patch-check-fill me-1"></i> Berhasil Kembali
-                                    </span>
-                                @endif
-                            </td>
-                        </tr>
-                        @empty
-                        <tr>
-                            <td colspan="6" class="text-center py-5">
-                                <img src="https://illustrations.popsy.co/gray/success.svg" alt="Empty" style="width: 140px;" class="mb-3 opacity-50">
-                                <p class="text-muted">Semua pengajuan sudah diproses!</p>
-                            </td>
-                        </tr>
-                        @endforelse
+    @php
+        // Ambil data denda yang sudah tersimpan, jika belum ada (masih proses) hitung estimasi
+        $isFixed = ($item->status == 'kembali');
+        $nominalDenda = $isFixed ? $item->denda : $item->hitungDendaOtomatis();
+        $hariTerlambat = $nominalDenda / 2000; 
+        $tglJatuhTempo = \Carbon\Carbon::parse($item->tanggal_jatuh_tempo);
+    @endphp
+    <tr>
+        <td class="ps-4 text-muted small">{{ $loop->iteration }}</td>
+        <td>
+            <div class="d-flex align-items-center">
+                <div class="user-avatar me-3">
+                    <i class="bi bi-person-fill"></i>
+                </div>
+                <div>
+                    <div class="fw-bold text-dark">{{ $item->user->name ?? 'N/A' }}</div>
+                    <div class="text-muted small">ID-{{ $item->idpinjam }}</div>
+                </div>
+            </div>
+        </td>
+        <td>
+            <div class="fw-semibold text-dark">{{ $item->buku->judul ?? '-' }}</div>
+        </td>
+        <td class="text-center">
+            <span class="{{ $nominalDenda > 0 ? 'text-danger fw-bold' : 'text-secondary' }}">
+                {{ $tglJatuhTempo->format('d/m/Y') }}
+            </span>
+        </td>
+        <td class="text-center">
+            @if($nominalDenda > 0)
+               <span class="badge bg-danger text-white px-3 py-2 rounded-pill">
+                    Rp {{ number_format($nominalDenda, 0, ',', '.') }}
+                </span>
+                <div class="text-danger small mt-1" style="font-size: 0.7rem;">
+                    Terlambat {{ round($hariTerlambat) }} Hari
+                </div>
+           
+            @else
+              <span class="badge bg-success-subtle text-success px-3 py-2 rounded-pill">
+                    Tepat Waktu
+                </span>
+                
+            @endif
+        </td>
+        <td class="text-center pe-4">
+            @if($item->status == 'proses kembali')
+                <form action="{{ route('pengembalian.store', $item->idpinjam) }}" method="POST">
+                    @csrf
+                    <button type="submit" class="btn btn-success btn-modern btn-sm">
+                        Konfirmasi Terima
+                    </button>
+                </form>
+            @else
+                <span class="text-success small fw-bold">
+                    <i class="bi bi-check-all"></i> Selesai
+                </span>
+            @endif
+        </td>
+    </tr>
+@empty
+    @endforelse
                     </tbody>
                 </table>
             </div>

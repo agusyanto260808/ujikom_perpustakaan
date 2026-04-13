@@ -59,4 +59,20 @@ class Peminjaman extends Model
             'idkembali'       // Local key di tabel pengembalian
         );
     }
+    public function hitungDendaOtomatis()
+    {
+        // Pastikan kita hanya mengambil tanggalnya saja tanpa jam
+        $tglJatuhTempo = \Carbon\Carbon::parse($this->tanggal_jatuh_tempo)->startOfDay();
+        $tglKembali = \Carbon\Carbon::today(); // Jam 00:00:00 hari ini
+
+        if ($tglKembali->gt($tglJatuhTempo)) {
+            // Gunakan parameter true pada diffInDays untuk mendapatkan nilai absolut
+            $hariTerlambat = $tglKembali->diffInDays($tglJatuhTempo, true);
+
+            // Atau bungkus dengan abs()
+            return abs($hariTerlambat) * 2000;
+        }
+
+        return 0;
+    }
 }

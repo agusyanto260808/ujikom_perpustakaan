@@ -76,27 +76,31 @@ class PeminjamanController extends Controller
             $statusBaru = $request->status;
             $statusLama = $peminjaman->status;
 
-
+            // Logika jika buku dikembalikan
             if ($statusBaru == 'Kembali' && $statusLama != 'Kembali') {
+                // Kembalikan stok buku
                 $peminjaman->buku->increment('stok', $peminjaman->jumlah);
 
-                // Set tanggal pengembalian realita adalah hari ini
+                // Set tanggal pengembalian
                 $peminjaman->tanggalkembali = now()->format('Y-m-d');
 
                 // --- HITUNG DENDA OTOMATIS ---
-                $jatuhTempo = \Carbon\Carbon::parse($peminjaman->tanggal_jatuh_tempo);
-                $hariIni = now();
+                $jatuhTempo = \Carbon\Carbon::parse($peminjaman->tanggal_jatuh_tempo)->startOfDay();
+                $hariIni = now()->startOfDay();
 
                 if ($hariIni->gt($jatuhTempo)) {
+                    // Gunakan diffInDays untuk mendapatkan jumlah hari keterlambatan
                     $selisihHari = $hariIni->diffInDays($jatuhTempo);
-                    $dendaPerHari = 2000; // Contoh: Rp 2.000 per hari
-                    $peminjaman->denda = $selisihHari * $dendaPerHari;
+                    $dendaPerHari = 2000;
+
+                    // Simpan denda sebagai angka positif (abs)
+                    $peminjaman->denda = abs($selisihHari * $dendaPerHari);
                 } else {
                     $peminjaman->denda = 0;
                 }
             }
 
-            // --- LOGIKA JIKA ADMIN MENOLAK ---
+            // Logika jika admin menolak permintaan yang masih 'Menunggu'
             if ($statusBaru == 'Ditolak' && $statusLama == 'Menunggu') {
                 $peminjaman->buku->increment('stok', $peminjaman->jumlah);
             }
@@ -104,8 +108,13 @@ class PeminjamanController extends Controller
             $peminjaman->status = $statusBaru;
             $peminjaman->save();
 
+            // Pesan sukses dengan info denda
+            $pesan = "Status diperbarui.";
+            if ($peminjaman->denda > 0) {
+                $pesan .= " User dikenakan denda Rp " . number_format($peminjaman->denda, 0, ',', '.');
+            }
 
-            return back()->with('success', "Status diperbarui. " . ($peminjaman->denda > 0 ? "User dikenakan denda Rp " . number_format($peminjaman->denda, 0, ',', '.') : ""));
+            return back()->with('success', $pesan);
         });
     }
     public function show($id)
