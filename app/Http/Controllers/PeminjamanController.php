@@ -76,25 +76,25 @@ class PeminjamanController extends Controller
             $statusBaru = $request->status;
             $statusLama = $peminjaman->status;
 
-            // --- LOGIKA SAAT BUKU DIKEMBALIKAN ---
-            // if ($statusBaru == 'Kembali' && $statusLama != 'Kembali') {
-            //     $peminjaman->buku->increment('stok', $peminjaman->jumlah);
 
-            //     // Set tanggal pengembalian realita adalah hari ini
-            //     $peminjaman->tanggalkembali = now()->format('Y-m-d');
+            if ($statusBaru == 'Kembali' && $statusLama != 'Kembali') {
+                $peminjaman->buku->increment('stok', $peminjaman->jumlah);
 
-            //     // --- HITUNG DENDA OTOMATIS ---
-            //     $jatuhTempo = \Carbon\Carbon::parse($peminjaman->tanggal_jatuh_tempo);
-            //     $hariIni = now();
+                // Set tanggal pengembalian realita adalah hari ini
+                $peminjaman->tanggalkembali = now()->format('Y-m-d');
 
-            //     if ($hariIni->gt($jatuhTempo)) {
-            //         $selisihHari = $hariIni->diffInDays($jatuhTempo);
-            //         $dendaPerHari = 2000; // Contoh: Rp 2.000 per hari
-            //         $peminjaman->denda = $selisihHari * $dendaPerHari;
-            //     } else {
-            //         $peminjaman->denda = 0;
-            //     }
-            // }
+                // --- HITUNG DENDA OTOMATIS ---
+                $jatuhTempo = \Carbon\Carbon::parse($peminjaman->tanggal_jatuh_tempo);
+                $hariIni = now();
+
+                if ($hariIni->gt($jatuhTempo)) {
+                    $selisihHari = $hariIni->diffInDays($jatuhTempo);
+                    $dendaPerHari = 2000; // Contoh: Rp 2.000 per hari
+                    $peminjaman->denda = $selisihHari * $dendaPerHari;
+                } else {
+                    $peminjaman->denda = 0;
+                }
+            }
 
             // --- LOGIKA JIKA ADMIN MENOLAK ---
             if ($statusBaru == 'Ditolak' && $statusLama == 'Menunggu') {
