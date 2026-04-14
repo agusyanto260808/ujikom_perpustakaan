@@ -54,8 +54,6 @@ class PengembalianController extends Controller
                 ]
             );
 
-            // Kembalikan Stok Buku
-            $pinjam->buku->increment('stok', $pinjam->jumlah);
 
             $pesan = 'Buku berhasil diterima!';
             if ($nominalDenda > 0) {

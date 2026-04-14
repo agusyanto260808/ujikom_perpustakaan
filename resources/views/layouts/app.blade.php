@@ -50,7 +50,7 @@
                     title: 'Login Berhasil!',
                     text: "{{ session('success') }}",
                     showConfirmButton: false,
-                    timer: 3000,
+                    timer: 1000,
                     timerProgressBar: true,
                     customClass: {
                         popup: 'rounded-4'

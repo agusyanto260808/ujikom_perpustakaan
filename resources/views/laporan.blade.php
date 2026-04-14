@@ -185,7 +185,6 @@
 
     <div class="container pb-5 mt-4">
         {{-- KOP SURAT (HANYA MUNCUL SAAT PRINT) --}}
-       {{-- KOP SURAT (HANYA MUNCUL SAAT PRINT) --}}
 <div class="print-only mb-4">
     <table style="width: 100%; border-bottom: 3px double #000; padding-bottom: 10px;">
         <tr>
@@ -308,26 +307,34 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @php $grandTotalDenda = 0; $totalBuku = 0; @endphp
-                                    @forelse($laporanKembali as $item)
-                                        @php 
-                                            $nominal = $item->pengembalian->denda->jumlah ?? 0;
-                                            $grandTotalDenda += $nominal;
-                                            $totalBuku += $item->jumlah;
-                                        @endphp
-                                        <tr>
-                                            <td class="ps-4 text-muted">{{ $loop->iteration }}</td>
-                                            <td class="fw-bold">{{ $item->user->name }}</td>
-                                            <td>{{ $item->buku->judul }}</td>
-                                            <td class="text-center">{{ $item->jumlah }}</td>
-                                            <td class="text-center">{{ $item->pengembalian ? \Carbon\Carbon::parse($item->pengembalian->tanggalkembali)->format('d/m/Y') : '-' }}</td>
-                                            <td class="text-end fw-bold {{ $nominal > 0 ? 'text-danger' : 'text-success' }}">
-                                                Rp {{ number_format($nominal, 0, ',', '.') }}
-                                            </td>
-                                        </tr>
-                                    @empty
-                                        <tr><td colspan="6" class="text-center py-5">Kosong.</td></tr>
-                                    @endforelse
+                                    {{-- Di dalam <tbody> Tab Pengembalian --}}
+@php $grandTotalDenda = 0; $totalBuku = 0; @endphp
+
+@forelse($laporanKembali as $item)
+    @php 
+        // LOGIKA PERBAIKAN: 
+        // Cek apakah denda ada di tabel peminjaman langsung atau di tabel denda
+        // Jika di DB HeidiSQL kolom 'denda' ada di tabel peminjaman:
+        $nominal = $item->denda ?? 0; 
+        
+        $grandTotalDenda += $nominal;
+        $totalBuku += $item->jumlah;
+    @endphp
+    <tr>
+        <td class="ps-4 text-muted">{{ $loop->iteration }}</td>
+        <td class="fw-bold">{{ $item->user->name }}</td>
+        <td>{{ $item->buku->judul }}</td>
+        <td class="text-center">{{ $item->jumlah }}</td>
+        <td class="text-center">
+            {{ $item->pengembalian ? \Carbon\Carbon::parse($item->pengembalian->tanggalkembali)->format('d/m/Y') : '-' }}
+        </td>
+        <td class="text-end fw-bold {{ $nominal > 0 ? 'text-danger' : 'text-success' }}">
+            Rp {{ number_format($nominal, 0, ',', '.') }}
+        </td>
+    </tr>
+@empty
+    <tr><td colspan="6" class="text-center py-5">Belum ada data pengembalian pada periode ini.</td></tr>
+@endforelse
                                 </tbody>
                                 <tfoot class="bg-light fw-bold">
                                     <tr>

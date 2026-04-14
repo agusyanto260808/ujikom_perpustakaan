@@ -96,7 +96,6 @@
     <input type="hidden" name="tanggal_kembali" id="tanggal_kembali_hidden">
 
     {{-- Input Jumlah Buku --}}
-    {{-- Input Jumlah Buku --}}
 <div class="mb-4">
     <label class="form-label fw-bold small text-secondary">Jumlah Pinjam:</label>
     <div class="input-group">

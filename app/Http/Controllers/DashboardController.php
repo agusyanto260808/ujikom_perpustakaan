@@ -7,55 +7,54 @@ use App\Models\User;
 use App\Models\Peminjaman;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
-    // app/Http/Controllers/DashboardController.php
-
     public function index()
     {
-        // 1. Hitung statistik dasar
+        // 1. Statistik Dasar
         $totalBuku = Buku::count();
         $totalUser = User::where('role', 'anggota')->count();
         $totalPinjam = Peminjaman::whereIn('status', ['dipinjam', 'proses kembali'])->count();
         $totalKembali = Peminjaman::whereIn('status', ['kembali', 'selesai', 'lunas'])->count();
 
-        // 2. Ambil data chart (untuk grafik tren literasi)
-        $peminjamanPerBulan = Peminjaman::selectRaw('MONTH(tanggal_pinjam) as bulan_angka, MONTHNAME(tanggal_pinjam) as bulan, COUNT(*) as total')
-            ->groupBy('bulan_angka', 'bulan')
-            ->orderBy('bulan_angka')
-            ->get();
+        // 2. Logika Grafik 7 Hari Terakhir (Sesuai Permintaan)
+        $labels = [];
+        $values = [];
 
-        $labels = $peminjamanPerBulan->pluck('bulan');
-        $values = $peminjamanPerBulan->pluck('total');
+        for ($i = 6; $i >= 0; $i--) {
+            $date = Carbon::now()->subDays($i);
+            $labels[] = $date->isoFormat('dddd'); // Menghasilkan: Senin, Selasa, dst.
 
-        // 3. Ambil riwayat peminjaman
+            // Hitung jumlah peminjaman pada tanggal tersebut
+            $count = Peminjaman::whereDate('tanggal_pinjam', $date->format('Y-m-d'))->count();
+            $values[] = $count;
+        }
+
+        // 3. Riwayat Peminjaman (Opsional untuk Admin/User)
         $riwayatPinjam = Peminjaman::with('buku')
-            ->where('iduser', auth()->id()) // Ganti 'id' menjadi 'iduser' sesuai database
+            ->when(auth()->user()->role === 'anggota', function ($query) {
+                return $query->where('iduser', auth()->id());
+            })
             ->latest()
             ->take(5)
             ->get();
 
-        // 4. Bungkus data untuk dikirim ke view
         $data = [
-            'totalBuku'     => $totalBuku,
-            'totalUser'     => $totalUser,
-            'totalPinjam'   => $totalPinjam,
-            'totalKembali'  => $totalKembali,
-            'labels'        => $labels,
-            'values'        => $values,
+            'totalBuku'    => $totalBuku,
+            'totalUser'    => $totalUser,
+            'totalPinjam'  => $totalPinjam,
+            'totalKembali' => $totalKembali,
+            'labels'       => $labels, // Data hari untuk JS
+            'values'       => $values, // Data jumlah untuk JS
             'riwayatPinjam' => $riwayatPinjam,
         ];
 
-        // 5. Cek Role dan Return View
         if (auth()->user()->role === 'anggota') {
             return view('dashboard_user', $data);
         }
 
         return view('dashboard', $data);
-    }
-    public function userIndex()
-    {
-        return view('dashboard_user'); // Pastikan Anda punya file resources/views/dashboard_user.blade.php
     }
 }
