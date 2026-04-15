@@ -20,7 +20,8 @@ class Peminjaman extends Model
         'tanggal_jatuh_tempo',
         'status',
         'jumlah',
-        'denda'
+        'status_bayar', // Pastikan ini ada
+        'denda',
     ];
 
     protected $casts = [

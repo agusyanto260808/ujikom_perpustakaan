@@ -25,7 +25,7 @@ class DashboardController extends Controller
 
         for ($i = 6; $i >= 0; $i--) {
             $date = Carbon::now()->subDays($i);
-            $labels[] = $date->isoFormat('dddd'); // Menghasilkan: Senin, Selasa, dst.
+            $labels[] = $date->isoFormat('dddd');
 
             // Hitung jumlah peminjaman pada tanggal tersebut
             $count = Peminjaman::whereDate('tanggal_pinjam', $date->format('Y-m-d'))->count();

@@ -59,4 +59,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/laporan', [LaporanController::class, 'index'])->name('laporan.index');
     // Tambahkan di dalam grup middleware auth
     Route::post('/denda/konfirmasi/{id}', [DendaController::class, 'konfirmasiLunas'])->name('denda.konfirmasi');
+    Route::post('/notifikasi/read', [PeminjamanController::class, 'markAsRead'])->name('notifikasi.read');
+    Route::post('/notifikasi/mark-as-read', [App\Http\Controllers\PeminjamanController::class, 'markAsRead'])->name('notifikasi.markAsRead');
+    Route::post('/peminjaman/lunas/{id}', [PeminjamanController::class, 'lunasDenda'])->name('peminjaman.lunas');
 });

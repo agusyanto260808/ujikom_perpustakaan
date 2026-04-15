@@ -34,26 +34,26 @@ class PengembalianController extends Controller
         $pinjam = Peminjaman::findOrFail($id);
 
         return DB::transaction(function () use ($pinjam) {
-            // Panggil rumus denda dari Model (Satu pintu)
+            // 1. Panggil rumus denda
             $nominalDenda = $pinjam->hitungDendaOtomatis();
 
-            // Update status di tabel Peminjaman
+            // 2. Update status di tabel Peminjaman
+            // HAPUS 'tanggalkembali' dari sini karena kolomnya tidak ada di tabel peminjaman
             $pinjam->update([
                 'status' => 'kembali',
                 'denda'  => $nominalDenda,
-                'tanggalkembali' => now()->toDateString(),
+                'status_bayar' => ($nominalDenda > 0) ? 'belum' : 'lunas', // Jika ada denda, status 'belum'
             ]);
 
-            // Catat ke tabel pengembalian untuk log histori
+            // 3. Catat ke tabel pengembalian (Di sini kolom tanggalkembali tersedia)
             DB::table('pengembalian')->updateOrInsert(
                 ['idpinjam' => $pinjam->idpinjam],
                 [
-                    'tanggalkembali' => now()->toDateString(),
+                    'tanggalkembali' => now()->toDateString(), // Ini benar karena tabelnya 'pengembalian'
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]
             );
-
 
             $pesan = 'Buku berhasil diterima!';
             if ($nominalDenda > 0) {

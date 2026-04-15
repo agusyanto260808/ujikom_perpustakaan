@@ -180,7 +180,7 @@
                             <td>
                                 <div class="fw-semibold text-dark">{{ $pinjam->buku->judul ?? 'Buku Dihapus' }}</div>
                                 <span class="badge bg-light text-dark border small fw-normal">
-                                    {{ $pinjam->jumlah }} Eksemplar
+                                    {{ $pinjam->jumlah }} Buku
                                 </span>
                             </td>
                             <td class="text-center">
@@ -200,30 +200,67 @@
                                 @endif
                             </td>
                             <td class="text-center pe-4">
-                                <div class="d-flex justify-content-center">
-                                    @if($statusLower == 'menunggu')
-                                        <form action="{{ route('peminjaman.update', $pinjam->idpinjam) }}" method="POST">
-                                            @csrf @method('PATCH')
-                                            <input type="hidden" name="status" value="Dipinjam">
-                                            <button class="btn btn-sm btn-primary btn-modern shadow-sm px-4">
-                                                Setujui
-                                            </button>
-                                        </form>
-                                    @elseif($statusLower == 'dipinjam')
-                                        <form action="{{ route('peminjaman.update', $pinjam->idpinjam) }}" method="POST">
-                                            @csrf @method('PATCH')
-                                            <input type="hidden" name="status" value="Kembali">
-                                            <button class="btn btn-sm btn-success btn-modern shadow-sm px-4">
-                                                Selesaikan
-                                            </button>
-                                        </form>
-                                    @else
-                                        <span class="badge bg-success-subtle text-success px-4 py-2 rounded-pill fw-bold">
-                                            <i class="bi bi-check-all"></i> Selesai
-                                        </span>
-                                    @endif
-                                </div>
-                            </td>
+    <div class="d-flex justify-content-center gap-2">
+        @if($statusLower == 'menunggu')
+            {{-- Tombol Setuju --}}
+            <form action="{{ route('peminjaman.update', $pinjam->idpinjam) }}" method="POST">
+                @csrf @method('PATCH')
+                <input type="hidden" name="status" value="Dipinjam">
+                <button type="submit" class="btn btn-sm btn-primary btn-modern shadow-sm px-3">
+                    <i class="bi bi-check-lg"></i> Setuju
+                </button>
+            </form>
+
+            {{-- Tombol Tolak (Memicu Modal) --}}
+            <button type="button" class="btn btn-sm btn-danger btn-modern shadow-sm px-3" 
+                    data-bs-toggle="modal" data-bs-target="#modalTolak{{ $pinjam->idpinjam }}">
+                <i class="bi bi-x-lg"></i> Tolak
+            </button>
+
+            {{-- Modal Alasan Penolakan --}}
+            <div class="modal fade" id="modalTolak{{ $pinjam->idpinjam }}" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content" style="border-radius: 20px;">
+                        <form action="{{ route('peminjaman.update', $pinjam->idpinjam) }}" method="POST">
+                            @csrf @method('PATCH')
+                            <div class="modal-header border-0 pt-4 px-4">
+                                <h5 class="modal-title fw-bold">Alasan Penolakan</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body px-4">
+                                <p class="text-muted small">Berikan alasan mengapa permintaan peminjaman buku <strong>{{ $pinjam->buku->judul }}</strong> ini ditolak.</p>
+                                <input type="hidden" name="status" value="Ditolak">
+                                <textarea name="pesan" class="form-control" rows="3" placeholder="Contoh: Stok buku fisik rusak atau tidak tersedia..." required style="border-radius: 12px;"></textarea>
+                            </div>
+                            <div class="modal-footer border-0 pb-4 px-4">
+                                <button type="button" class="btn btn-light btn-modern shadow-none" data-bs-dismiss="modal">Batal</button>
+                                <button type="submit" class="btn btn-danger btn-modern shadow-sm">Kirim Penolakan</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+        @elseif($statusLower == 'dipinjam')
+            {{-- Tombol Kembali --}}
+            <form action="{{ route('peminjaman.update', $pinjam->idpinjam) }}" method="POST">
+                @csrf @method('PATCH')
+                <input type="hidden" name="status" value="Kembali">
+                <button class="btn btn-sm btn-success btn-modern shadow-sm px-4">
+                    Selesaikan Pinjaman
+                </button>
+            </form>
+        @elseif($statusLower == 'ditolak')
+            <span class="badge bg-danger-subtle text-danger px-4 py-2 rounded-pill fw-bold">
+                <i class="bi bi-x-circle"></i> Ditolak
+            </span>
+        @else
+            <span class="badge bg-success-subtle text-success px-4 py-2 rounded-pill fw-bold">
+                <i class="bi bi-check-all"></i> Selesai
+            </span>
+        @endif
+    </div>
+</td>
                         </tr>
                         @empty
                         <tr>

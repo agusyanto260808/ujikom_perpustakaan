@@ -162,10 +162,12 @@
                     </thead>
                     <tbody>
                         @forelse ($pengembalian as $item)
-    @php
-        // Ambil data denda yang sudah tersimpan, jika belum ada (masih proses) hitung estimasi
-        $isFixed = ($item->status == 'kembali');
-        $nominalDenda = $isFixed ? $item->denda : $item->hitungDendaOtomatis();
+   @php
+        // 1. Cek apakah status sudah 'kembali' (Berarti sudah dikonfirmasi petugas)
+        $isFinished = ($item->status == 'kembali');
+        
+        // 2. Hitung denda
+        $nominalDenda = $isFinished ? $item->denda : $item->hitungDendaOtomatis();
         $hariTerlambat = $nominalDenda / 2000; 
         $tglJatuhTempo = \Carbon\Carbon::parse($item->tanggal_jatuh_tempo);
     @endphp
@@ -190,36 +192,58 @@
                 {{ $tglJatuhTempo->format('d/m/Y') }}
             </span>
         </td>
-        <td class="text-center">
-            @if($nominalDenda > 0)
-               <span class="badge bg-danger text-white px-3 py-2 rounded-pill">
-                    Rp {{ number_format($nominalDenda, 0, ',', '.') }}
-                </span>
-                <div class="text-danger small mt-1" style="font-size: 0.7rem;">
-                    Terlambat {{ round($hariTerlambat) }} Hari
-                </div>
-           
-            @else
-              <span class="badge bg-success-subtle text-success px-3 py-2 rounded-pill">
-                    Tepat Waktu
-                </span>
-                
-            @endif
-        </td>
-        <td class="text-center pe-4">
-            @if($item->status == 'proses kembali')
-                <form action="{{ route('pengembalian.store', $item->idpinjam) }}" method="POST">
-                    @csrf
-                    <button type="submit" class="btn btn-success btn-modern btn-sm">
-                        Konfirmasi Terima
-                    </button>
-                </form>
-            @else
-                <span class="text-success small fw-bold">
-                    <i class="bi bi-check-all"></i> Selesai
-                </span>
-            @endif
-        </td>
+     <td class="text-center">
+    @if($item->status == 'kembali' && $item->denda > 0)
+        @if($item->status_bayar == 'lunas')
+            <span class="badge bg-success px-3 py-2 rounded-pill">
+                <i class="bi bi-check-circle me-1"></i> LUNAS
+            </span>
+        @else
+            <span class="badge bg-warning text-dark px-3 py-2 rounded-pill">
+                <i class="bi bi-clock-history me-1"></i> BELUM BAYAR
+            </span>
+            <div class="text-danger small fw-bold mt-1">
+                Rp {{ number_format($item->denda, 0, ',', '.') }}
+            </div>
+        @endif
+    @elseif($item->hitungDendaOtomatis() > 0)
+        <span class="badge bg-danger px-3 py-2 rounded-pill">
+            Rp {{ number_format($item->hitungDendaOtomatis(), 0, ',', '.') }}
+        </span>
+    @else
+        <span class="badge bg-success-subtle text-success px-3 py-2 rounded-pill">Tepat Waktu</span>
+    @endif
+</td>
+      <td class="text-center pe-4">
+    @if($item->status == 'proses kembali')
+        {{-- Tombol untuk konfirmasi buku fisik datang --}}
+        <form action="{{ route('pengembalian.store', $item->idpinjam) }}" method="POST">
+            @csrf
+            <button type="submit" class="btn btn-success btn-modern btn-sm shadow-sm">
+                Konfirmasi Terima
+            </button>
+        </form>
+
+    @elseif($item->status == 'kembali' && $item->status_bayar == 'belum' && $item->denda > 0)
+        {{-- Tombol Bayar Denda (Hanya muncul jika sudah kembali tapi belum lunas) --}}
+        <form id="form-lunas-{{ $item->idpinjam }}" action="{{ route('peminjaman.lunas', $item->idpinjam) }}" method="POST">
+            @csrf
+            <button type="button" 
+                    class="btn btn-warning btn-modern btn-sm fw-bold shadow-sm btn-bayar" 
+                    data-nama="{{ $item->user->name ?? 'Siswa' }}" 
+                    data-denda="Rp {{ number_format($item->denda, 0, ',', '.') }}"
+                    data-id="{{ $item->idpinjam }}">
+                <i class="bi bi-cash-coin me-1"></i> Bayar Denda
+            </button>
+        </form>
+
+    @else
+        {{-- Status jika denda 0 atau sudah lunas --}}
+        <span class="badge bg-success-subtle text-success border border-success px-3">
+            <i class="bi bi-check-all me-1"></i> Transaksi Selesai
+        </span>
+    @endif
+</td>
     </tr>
 @empty
     @endforelse
@@ -235,3 +259,44 @@
         </div>
     </div>
 </x-app-layout>
+<script>
+    document.querySelectorAll('.btn-bayar').forEach(button => {
+        button.addEventListener('click', function() {
+            const nama = this.getAttribute('data-nama');
+            const denda = this.getAttribute('data-denda');
+            const id = this.getAttribute('data-id');
+
+            Swal.fire({
+                title: 'Konfirmasi Pembayaran',
+                html: `Siswa <b>${nama}</b> akan membayar denda sebesar <br><h3 class="text-danger mt-2"><b>${denda}</b></h3>`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#198754', // Warna hijau sukses
+                cancelButtonColor: '#d33',
+                confirmButtonText: '<i class="bi bi-check-circle"></i> Ya, Sudah Bayar!',
+                cancelButtonText: 'Batal',
+                reverseButtons: true,
+                borderRadius: '15px',
+                customClass: {
+                    popup: 'rounded-4',
+                    confirmButton: 'btn-modern',
+                    cancelButton: 'btn-modern'
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Submit form secara otomatis jika klik OK
+                    document.getElementById('form-lunas-' + id).submit();
+                }
+            });
+        });
+    });
+</script>
+@if(session('success'))
+    Swal.fire({
+        icon: 'success',
+        title: 'Berhasil!',
+        text: "{{ session('success') }}",
+        timer: 1000,
+        showConfirmButton: false
+    });
+@endif

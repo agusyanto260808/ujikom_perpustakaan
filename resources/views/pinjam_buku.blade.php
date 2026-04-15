@@ -62,86 +62,85 @@
         <div class="col-md-3">
             <div class="card border-0 rounded-4 shadow-sm sticky-top" style="top: 20px;">
                 <div class="card-body p-4 bg-light rounded-4">
-                    <label class="text-muted fw-bold small mb-3 text-uppercase d-block">Panel Peminjaman</label>
-                    
-                    @php
-                        // Logika Keamanan: Cek apakah user masih meminjam buku lain
-                        $hasPendingReturn = App\Models\Peminjaman::where('iduser', auth()->id())
-                                            ->where('status', 'dipinjam')
-                                            ->exists();
-                        $maxDays = 7;
-                    @endphp
-
-                    @if($hasPendingReturn)
-                        <div class="alert alert-danger border-0 shadow-sm rounded-3">
-                            <div class="d-flex">
-                                <i class="bi bi-exclamation-octagon-fill me-2"></i>
-                                <div>
-                                    <p class="fw-bold small mb-1">Peminjaman Ditolak</p>
-                                    <p class="x-small mb-0 opacity-75" style="font-size: 0.75rem;">Anda masih memiliki buku yang belum dikembalikan.</p>
-                                </div>
-                            </div>
-                        </div>
-                    @elseif($buku->stok <= 0)
-                        <div class="text-center py-3">
-                            <button disabled class="btn btn-secondary w-100 py-3 fw-bold rounded-3">STOK HABIS</button>
-                            <p class="text-muted small mt-2">Cek kembali dalam beberapa hari.</p>
-                        </div>
-                    @else
-                    <form action="{{ route('peminjaman.store') }}" method="POST" onsubmit="confirmLoan(event)">
-    @csrf
-    <input type="hidden" name="idbuku" value="{{ $buku->idbuku }}">
+    <label class="text-muted fw-bold small mb-3 text-uppercase d-block">Panel Peminjaman</label>
     
-    {{-- Input Hidden untuk Controller --}}
-    <input type="hidden" name="tanggal_kembali" id="tanggal_kembali_hidden">
+   @php
+    // Cek apakah user memiliki denda yang nominalnya > 0 DAN belum dibayar
+    $hasUnpaidFine = App\Models\Peminjaman::where('iduser', auth()->id())
+                    ->where('denda', '>', 0)
+                    ->where('status_bayar', 'belum')
+                    ->exists();
 
-    {{-- Input Jumlah Buku --}}
-<div class="mb-4">
-    <label class="form-label fw-bold small text-secondary">Jumlah Pinjam:</label>
-    <div class="input-group">
-        <button class="btn btn-outline-secondary" type="button" onclick="changeValue(-1)">-</button>
-        {{-- Gunakan stok_tersedia sebagai batas maksimal --}}
-        <input type="number" name="jumlah" id="qty" value="1" min="1" 
-               max="{{ $buku->stok_tersedia }}" 
-               oninput="validateQty(this)"
-               class="form-control text-center fw-bold shadow-none">
-        <button class="btn btn-outline-secondary" type="button" onclick="changeValue(1)">+</button>
-    </div>
-    <div id="qty-error" class="text-danger small mt-1 d-none">
-        <i class="bi bi-exclamation-circle"></i> Stok tersedia hanya {{ $buku->stok_tersedia }}.
-    </div>
-</div>
+    $hasPendingReturn = App\Models\Peminjaman::where('iduser', auth()->id())
+                    ->where('status', 'Dipinjam')
+                    ->exists();
+@endphp
 
-    {{-- Input Durasi --}}
-    {{-- Input Durasi (Dropdown) --}}
-<div class="mb-4">
-    <label class="form-label small fw-bold text-muted">Durasi Pinjam</label>
-    <div class="mb-2">
-        <select id="days" class="form-select fw-bold border-primary shadow-none" onchange="calculateDueDate()">
-            <option value="3" selected>3 Hari </option>
-            <option value="7" selected>7 Hari </option>
-            <option value="14">14 Hari </option>
-            <option value="30">30 Hari </option>
-        </select>
-    </div>
-    
-    {{-- Tampilan Estimasi untuk User --}}
-    <div id="date-preview" class="p-3 bg-white rounded border text-center shadow-sm">
-        <span class="text-muted small text-uppercase fw-bold">Tanggal Kembali:</span><br>
-        <span id="target-date" class="h5 fw-bold text-primary"></span>
-        <hr class="my-2">
-        <p class="mb-0 text-danger" style="font-size: 0.75rem;">
-            <i class="bi bi-info-circle"></i> Melewati tanggal ini akan dianggap jatuh tempo dan dikenakan denda.
-        </p>
-    </div>
-</div>
-
-    <button type="submit" class="btn btn-success w-100 py-3 fw-bold shadow-sm rounded-3">
-        <i class="bi bi-journal-plus me-1"></i> AJUKAN PINJAMAN
-    </button>
-</form>
-                    @endif
+    @if($hasUnpaidFine)
+        {{-- BLOKIR TOTAL JIKA ADA DENDA --}}
+        <div class="alert alert-danger border-0 shadow-sm rounded-3">
+            <div class="d-flex">
+                <i class="bi bi-cash-stack me-2 fs-4"></i>
+                <div>
+                    <p class="fw-bold small mb-1">Denda Terdeteksi</p>
+                    <p class="x-small mb-0 opacity-75" style="font-size: 0.75rem;">
+                        Selesaikan denda Anda di petugas untuk meminjam buku lagi.
+                    </p>
                 </div>
+            </div>
+        </div>
+        <button disabled class="btn btn-secondary w-100 py-3 fw-bold rounded-3">AKSES TERKUNCI</button>
+
+    @elseif($buku->stok_tersedia <= 0)
+        {{-- STOK HABIS --}}
+        <button disabled class="btn btn-secondary w-100 py-3 fw-bold rounded-3">STOK HABIS</button>
+
+    @else
+        {{-- BISA PINJAM (MESKIPUN ADA PINJAMAN AKTIF LAIN) --}}
+        
+        @if($hasPendingReturn)
+            <div class="alert alert-info py-2 border-0 shadow-sm rounded-3 mb-3">
+                <p class="x-small mb-0" style="font-size: 0.75rem;">
+                    <i class="bi bi-info-circle-fill"></i> Anda sedang meminjam buku lain. Pastikan dikembalikan tepat waktu ya!
+                </p>
+            </div>
+        @endif
+
+        <form action="{{ route('peminjaman.store') }}" method="POST" onsubmit="confirmLoan(event)">
+            @csrf
+            <input type="hidden" name="idbuku" value="{{ $buku->idbuku }}">
+            <input type="hidden" name="tanggal_kembali" id="tanggal_kembali_hidden">
+
+            <div class="mb-4">
+                <label class="form-label fw-bold small text-secondary">Jumlah Pinjam:</label>
+                <div class="input-group">
+                    <button class="btn btn-outline-secondary" type="button" onclick="changeValue(-1)">-</button>
+                    <input type="number" name="jumlah" id="qty" value="1" min="1" 
+                           max="{{ $buku->stok_tersedia }}" 
+                           oninput="validateQty(this)"
+                           class="form-control text-center fw-bold shadow-none">
+                    <button class="btn btn-outline-secondary" type="button" onclick="changeValue(1)">+</button>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label small fw-bold text-muted">Durasi Pinjam</label>
+                <select id="days" class="form-select fw-bold border-primary shadow-none" onchange="calculateDueDate()">
+                    <option value="3">3 Hari</option>
+                    <option value="7" selected>7 Hari</option>
+                    <option value="14">14 Hari</option>
+                </select>
+                <div id="date-preview" class="mt-2 p-2 bg-white rounded border text-center shadow-sm">
+                    <span id="target-date" class="small fw-bold text-primary"></span>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-success w-100 py-3 fw-bold shadow-sm rounded-3">
+                <i class="bi bi-journal-plus me-1"></i> AJUKAN PINJAMAN
+            </button>
+        </form>
+    @endif
+</div>
             </div>
         </div>
     </div>

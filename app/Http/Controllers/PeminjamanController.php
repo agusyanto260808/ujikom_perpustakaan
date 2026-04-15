@@ -45,6 +45,21 @@ class PeminjamanController extends Controller
 
     public function store(Request $request)
     {
+        $iduser = auth()->id();
+
+        // 1. Cek Denda (Pastikan denda > 0 DAN belum dibayar)
+        $hasUnpaidFine = Peminjaman::where('iduser', $iduser)
+            ->where('denda', '>', 0) // Tambahkan pengecekan nominal denda
+            ->where('status_bayar', 'belum')
+            ->exists();
+
+        if ($hasUnpaidFine) {
+            // Jika lewat URL langsung, kita lempar balik dengan pesan error
+            return redirect()->back()->with('error', 'Akses terkunci! Selesaikan denda Anda terlebih dahulu.');
+        }
+        // CATATAN: Pengecekan $hasPendingReturn DIHAPUS agar bisa pinjam buku lain
+
+        // 2. Validasi input
         $request->validate([
             'idbuku' => 'required|exists:buku,idbuku',
             'tanggal_kembali' => 'required|date|after:today',
@@ -53,18 +68,20 @@ class PeminjamanController extends Controller
 
         $buku = Buku::findOrFail($request->idbuku);
 
-        // CRITICAL: Cek stok menggunakan Accessor 'stok_tersedia'
+        // 3. Cek stok
         if ($buku->stok_tersedia < $request->jumlah) {
-            return redirect()->back()->with('error', 'Maaf, stok yang tersedia saat ini tidak mencukupi.');
+            return redirect()->back()->with('error', 'Maaf, stok yang tersedia tidak mencukupi.');
         }
 
+        // 4. Simpan data peminjaman
         Peminjaman::create([
-            'iduser' => auth()->id(),
+            'iduser' => $iduser,
             'idbuku' => $request->idbuku,
             'tanggal_pinjam' => now(),
             'tanggal_jatuh_tempo' => $request->tanggal_kembali,
-            'status' => 'Menunggu', // Jika status 'Menunggu' ikut mengurangi stok di Model
+            'status' => 'Menunggu',
             'jumlah' => $request->jumlah,
+            'status_bayar' => 'lunas',
         ]);
 
         return redirect()->route('riwayat_peminjaman.index')->with('success', 'Permintaan pinjam berhasil dikirim!');
@@ -76,45 +93,41 @@ class PeminjamanController extends Controller
             $statusBaru = $request->status;
             $statusLama = $peminjaman->status;
 
-            // Logika jika buku dikembalikan
+            if ($statusBaru == 'Ditolak') {
+                // Ambil pesan dari input form petugas (pastikan name di form adalah 'pesan')
+                $peminjaman->pesan = $request->pesan;
+            }
+            // 2. Logika Jika Disetujui (Dipinjam)
+            if ($statusBaru == 'Dipinjam') {
+                $peminjaman->pesan = null; // Bersihkan pesan jika sebelumnya ada
+            }
+
+            // 3. Logika Jika Kembali (Selesai)
+            // Di dalam function update() pada PeminjamanController
             if ($statusBaru == 'Kembali' && $statusLama != 'Kembali') {
-                // Kembalikan stok buku
-                $peminjaman->buku->increment('stok', $peminjaman->jumlah);
-
-                // Set tanggal pengembalian
-                $peminjaman->tanggalkembali = now()->format('Y-m-d');
-
-                // --- HITUNG DENDA OTOMATIS ---
                 $jatuhTempo = \Carbon\Carbon::parse($peminjaman->tanggal_jatuh_tempo)->startOfDay();
                 $hariIni = now()->startOfDay();
 
                 if ($hariIni->gt($jatuhTempo)) {
-                    // Gunakan diffInDays untuk mendapatkan jumlah hari keterlambatan
                     $selisihHari = $hariIni->diffInDays($jatuhTempo);
-                    $dendaPerHari = 2000;
+                    $nominalDenda = abs($selisihHari * 2000);
 
-                    // Simpan denda sebagai angka positif (abs)
-                    $peminjaman->denda = abs($selisihHari * $dendaPerHari);
+                    $peminjaman->denda = $nominalDenda;
+                    // PENTING: Jika ada denda, status bayar harus 'belum' agar terblokir
+                    $peminjaman->status_bayar = 'belum';
                 } else {
                     $peminjaman->denda = 0;
+                    $peminjaman->status_bayar = 'lunas';
                 }
-            }
-
-            // Logika jika admin menolak permintaan yang masih 'Menunggu'
-            if ($statusBaru == 'Ditolak' && $statusLama == 'Menunggu') {
-                $peminjaman->buku->increment('stok', $peminjaman->jumlah);
             }
 
             $peminjaman->status = $statusBaru;
             $peminjaman->save();
 
-            // Pesan sukses dengan info denda
-            $pesan = "Status diperbarui.";
-            if ($peminjaman->denda > 0) {
-                $pesan .= " User dikenakan denda Rp " . number_format($peminjaman->denda, 0, ',', '.');
-            }
+            $pesanFlash = "Transaksi berhasil diperbarui.";
+            if ($statusBaru == 'Ditolak') $pesanFlash = "Peminjaman telah ditolak.";
 
-            return back()->with('success', $pesan);
+            return back()->with('success', $pesanFlash);
         });
     }
     public function show($id)
@@ -126,7 +139,12 @@ class PeminjamanController extends Controller
     // Halaman Riwayat untuk Siswa/User
     public function riwayat()
     {
-        $peminjaman = Peminjaman::with(['buku', 'user', 'pengembalian']) // TAMBAHKAN pengembalian DI SINI
+        // Saat halaman ini dibuka, semua notifikasi yang belum dibaca dianggap "sudah dibaca"
+        \App\Models\Peminjaman::where('iduser', auth()->id())
+            ->where('is_read', 0)
+            ->update(['is_read' => 1]);
+
+        $peminjaman = \App\Models\Peminjaman::with(['buku', 'user'])
             ->where('iduser', auth()->id())
             ->latest()
             ->paginate(10);
@@ -139,5 +157,29 @@ class PeminjamanController extends Controller
         $peminjaman = Peminjaman::findOrFail($id);
         $peminjaman->delete();
         return back()->with('success', 'Data peminjaman berhasil dihapus.');
+    }
+    public function markAsRead()
+    {
+        \App\Models\Peminjaman::where('iduser', auth()->id())
+            ->where('is_read', 0)
+            ->update(['is_read' => 1]);
+
+        return response()->json(['status' => 'success']);
+    }
+
+
+    public function lunasDenda($id) // Gunakan lunasDenda atau lunas_denda
+    {
+        // Opsional: Cek apakah yang akses adalah Petugas/Admin
+        if (auth()->user()->role == 'Siswa') {
+            return back()->with('error', 'Anda tidak memiliki akses untuk aksi ini.');
+        }
+
+        $peminjaman = Peminjaman::findOrFail($id);
+        $peminjaman->update([
+            'status_bayar' => 'lunas'
+        ]);
+
+        return back()->with('success', 'Pembayaran denda berhasil dikonfirmasi.');
     }
 }
