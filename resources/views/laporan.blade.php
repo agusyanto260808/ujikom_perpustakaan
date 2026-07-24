@@ -199,39 +199,58 @@
         </tr>
     </table>
 </div>
+               
 
-        {{-- FILTER SECTION --}}
-        <div class="modern-card p-4 mb-4 no-print shadow-sm">
-            <form method="GET" action="{{ route('laporan.index') }}" class="row g-3 align-items-end">
-                <input type="hidden" name="active_tab" id="active_tab_input" value="{{ request('active_tab', 'pills-pinjam') }}">
-                <div class="col-md-3">
-                    <label class="small fw-bold text-secondary mb-2">Filter Bulan</label>
-                    <select name="bulan" class="form-select form-select-modern shadow-none">
-                        @foreach(range(1, 12) as $m)
-                            <option value="{{ $m }}" {{ (int)$bulan == $m ? 'selected' : '' }}>
-                                {{ \Carbon\Carbon::create()->month((int)$m)->translatedFormat('F') }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label class="small fw-bold text-secondary mb-2">Filter Tahun</label>
-                    <select name="tahun" class="form-select form-select-modern shadow-none">
-                        @for($y = date('Y'); $y >= date('Y') - 5; $y--)
-                            <option value="{{ $y }}" {{ (int)$tahun == $y ? 'selected' : '' }}>{{ $y }}</option>
-                        @endfor
-                    </select>
-                </div>
-                <div class="col-md-6 d-flex gap-2">
-                    <button type="submit" class="btn btn-modern btn-dark flex-grow-1 shadow-sm">
-                        <i class="bi bi-filter me-1"></i> Terapkan
-                    </button>
-                    <button type="button" onclick="window.print()" class="btn btn-modern btn-primary shadow-sm px-4">
-                        <i class="bi bi-printer me-1"></i> Cetak Laporan
-                    </button>
-                </div>
-            </form>
+<div class="modern-card p-4 mb-4 no-print shadow-sm">
+    <form method="GET" action="{{ route('laporan.index') }}" class="row g-3 align-items-end">
+        <input type="hidden" name="active_tab" id="active_tab_input" value="{{ request('active_tab', 'pills-pinjam') }}">
+        
+      
+        @if(auth()->user()->role == 'kep_perpus')
+        <div class="col-md-4">
+            <label class="small fw-bold text-secondary mb-2">Cari Data</label>
+            <div class="input-group">
+                <span class="input-group-text bg-white border-end-0 ps-3">
+                    <i class="bi bi-search text-muted"></i>
+                </span>
+                <input type="text" name="search" value="{{ request('search') }}"
+                       class="form-control form-select-modern border-start-0 ps-0 shadow-none"
+                       placeholder="Nama Anggota / Judul Buku...">
+            </div>
         </div>
+        @endif
+
+        
+        <div class="{{ auth()->user()->role == 'kep_perpus' ? 'col-md-2' : 'col-md-4' }}">
+            <label class="small fw-bold text-secondary mb-2">Bulan</label>
+            <select name="bulan" class="form-select form-select-modern shadow-none">
+                @foreach(range(1, 12) as $m)
+                    <option value="{{ $m }}" {{ (int)$bulan == $m ? 'selected' : '' }}>
+                        {{ \Carbon\Carbon::create()->month((int)$m)->translatedFormat('F') }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
+
+        <div class="{{ auth()->user()->role == 'kep_perpus' ? 'col-md-2' : 'col-md-4' }}">
+            <label class="small fw-bold text-secondary mb-2">Tahun</label>
+            <select name="tahun" class="form-select form-select-modern shadow-none">
+                @for($y = date('Y'); $y >= date('Y') - 5; $y--)
+                    <option value="{{ $y }}" {{ (int)$tahun == $y ? 'selected' : '' }}>{{ $y }}</option>
+                @endfor
+            </select>
+        </div>
+
+        <div class="{{ auth()->user()->role == 'kep_perpus' ? 'col-md-4' : 'col-md-4' }} d-flex gap-2">
+            <button type="submit" class="btn btn-modern btn-dark flex-grow-1 shadow-sm">
+                <i class="bi bi-filter me-1"></i> Terapkan
+            </button>
+            <button type="button" onclick="window.print()" class="btn btn-modern btn-primary shadow-sm px-4">
+                <i class="bi bi-printer me-1"></i> Cetak
+            </button>
+        </div>
+    </form>
+</div>
 
         <div class="tab-content" id="pills-tabContent">
             
@@ -312,9 +331,6 @@
 
 @forelse($laporanKembali as $item)
     @php 
-        // LOGIKA PERBAIKAN: 
-        // Cek apakah denda ada di tabel peminjaman langsung atau di tabel denda
-        // Jika di DB HeidiSQL kolom 'denda' ada di tabel peminjaman:
         $nominal = $item->denda ?? 0; 
         
         $grandTotalDenda += $nominal;

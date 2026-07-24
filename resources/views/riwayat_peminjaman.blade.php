@@ -172,12 +172,12 @@
 </td>
                             <td class="text-end">
                                 @if($status == 'dipinjam')
-                                    <form action="{{ route('pengembalian.ajukan', $pinjam->idpinjam) }}" method="POST">
-                                        @csrf
-                                        <button type="submit" class="btn btn-indigo shadow-sm">
-                                            Kembalikan <i class="bi bi-arrow-right-short ms-1"></i>
-                                        </button>
-                                    </form>
+                                    <form action="{{ route('pengembalian.ajukan', $pinjam->idpinjam) }}" method="POST" class="form-kembalikan">
+            @csrf
+            <button type="button" class="btn btn-indigo shadow-sm btn-submit-kembali">
+                Ajukan Pengembalian <i class="bi bi-arrow-right-short ms-1"></i>
+            </button>
+        </form>
                                 @elseif($status == 'proses kembali')
                                     <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle badge-modern">
                                         <i class="bi bi-clock-history me-1"></i> Menunggu Verifikasi
@@ -211,3 +211,28 @@
         </div>
     </div>
 </x-app-layout>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    document.querySelectorAll('.btn-submit-kembali').forEach(button => {
+        button.addEventListener('click', function(e) {
+            const form = this.closest('.form-kembalikan');
+            
+            Swal.fire({
+                title: 'Yakin ingin mengembalikan?',
+                text: "Pastikan barang dalam kondisi baik saat dikembalikan.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#4f46e5', // Warna indigo sesuai btn Anda
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Ya, Kembalikan!',
+                cancelButtonText: 'Batal',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit(); // Kirim form jika user klik 'Ya'
+                }
+            });
+        });
+    });
+</script>

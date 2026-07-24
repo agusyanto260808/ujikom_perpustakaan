@@ -9,32 +9,54 @@ use Carbon\Carbon;
 
 class LaporanController extends Controller
 {
-    // App\Http\Controllers\LaporanController.php
 
     public function index(Request $request)
     {
-        // Lakukan casting ke integer langsung saat mengambil input
         $bulan = (int) $request->input('bulan', date('m'));
         $tahun = (int) $request->input('tahun', date('Y'));
-
-        // Sekarang Carbon tidak akan protes karena menerima Integer
         $nama_bulan = \Carbon\Carbon::create()->month($bulan)->translatedFormat('F');
+        $search = $request->input('search');
 
-        // 1. Data untuk Tab Peminjaman ($laporan)
-        $laporan = Peminjaman::with(['user', 'buku'])
+
+        $query = Peminjaman::with(['user', 'buku'])
             ->whereMonth('tanggal_pinjam', $bulan)
-            ->whereYear('tanggal_pinjam', $tahun)
-            ->get();
+            ->whereYear('tanggal_pinjam', $tahun);
 
-        // 2. Data untuk Tab Pengembalian ($laporanKembali)
-        $laporanKembali = Peminjaman::with(['user', 'buku', 'pengembalian'])
-            ->whereHas('pengembalian', function ($query) use ($bulan, $tahun) {
-                $query->whereMonth('tanggalkembali', $bulan)
+
+        if ($search && auth()->user()->role == 'kep_perpus') {
+            $query->where(function ($q) use ($search) {
+                $q->whereHas('buku', function ($queryBuku) use ($search) {
+                    $queryBuku->where('judul', 'like', "%{$search}%");
+                })
+                    ->orWhereHas('user', function ($queryUser) use ($search) {
+                        $queryUser->where('name', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        $laporan = $query->get();
+
+        // 2. Data untuk Tab Pengembalian (Ditambahkan pencarian juga jika perlu)
+        $queryKembali = Peminjaman::with(['user', 'buku', 'pengembalian'])
+            ->whereHas('pengembalian', function ($q) use ($bulan, $tahun) {
+                $q->whereMonth('tanggalkembali', $bulan)
                     ->whereYear('tanggalkembali', $tahun);
-            })
-            ->get();
+            });
 
-        // 3. Data untuk Tab Inventaris ($buku_all)
+        if ($search && auth()->user()->role == 'kep_perpus') {
+            $queryKembali->where(function ($q) use ($search) {
+                $q->whereHas('buku', function ($qb) use ($search) {
+                    $qb->where('judul', 'like', "%{$search}%");
+                })
+                    ->orWhereHas('user', function ($qu) use ($search) {
+                        $qu->where('name', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        $laporanKembali = $queryKembali->get();
+
+        // 3. Data untuk Tab Inventaris
         $buku_all = Buku::all();
 
         return view('laporan', compact(

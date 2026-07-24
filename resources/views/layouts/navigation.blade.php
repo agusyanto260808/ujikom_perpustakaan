@@ -64,25 +64,38 @@
                                 <li class="mb-1">
                                     <a class="dropdown-item p-2 rounded {{ $notif->is_read == 0 ? 'bg-light' : '' }}" href="{{ route('riwayat_peminjaman.index') }}" style="white-space: normal;">
                                         <div class="d-flex flex-column">
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                @php
-                                                    $statusClass = $notif->status == 'Ditolak' ? 'text-danger' : ($notif->status == 'Kembali' ? 'text-success' : 'text-primary');
-                                                @endphp
-                                                <span class="fw-bold text-xs {{ $statusClass }}">
-                                                    {{ $notif->status == 'Dipinjam' ? 'Disetujui' : ($notif->status == 'Kembali' ? 'Selesai' : 'Ditolak') }}
-                                                </span>
-                                                <small class="text-gray-400" style="font-size: 0.6rem;">{{ $notif->updated_at->diffForHumans() }}</small>
-                                            </div>
-                                            <span class="text-dark fw-medium" style="font-size: 0.75rem;">Buku: {{ $notif->buku->judul }}</span>
-                                            
-                                            @if($notif->status == 'Ditolak')
-                                                <div class="mt-1 p-2 bg-danger-subtle rounded border-start border-danger border-3">
-                                                    <small class="text-danger d-block" style="font-size: 0.65rem; line-height: 1.2;">
-                                                        <strong>Alasan:</strong> {{ $notif->pesan ?? 'Tidak ada keterangan tambahan' }}
-                                                    </small>
-                                                </div>
-                                            @endif
-                                        </div>
+    <div class="d-flex justify-content-between align-items-center">
+        @php
+            // 1. Perbaikan Logika Warna (CSS Class)
+            if ($notif->status == 'Ditolak') {
+                $statusClass = 'text-danger';
+                $statusText = 'Ditolak';
+            } elseif ($notif->status == 'Kembali') {
+                $statusClass = 'text-success';
+                $statusText = 'Selesai';
+            } else {
+                $statusClass = 'text-primary';
+                $statusText = 'Disetujui';
+            }
+        @endphp
+
+        <span class="fw-bold text-xs {{ $statusClass }}">
+            {{ $statusText }}
+        </span>
+        <small class="text-gray-400" style="font-size: 0.6rem;">{{ $notif->updated_at->diffForHumans() }}</small>
+    </div>
+    
+    <span class="text-dark fw-medium" style="font-size: 0.75rem;">Buku: {{ $notif->buku->judul }}</span>
+    
+    {{-- 2. Box Alasan hanya muncul jika statusnya Ditolak --}}
+    @if($notif->status == 'Ditolak')
+        <div class="mt-1 p-2 bg-danger-subtle rounded border-start border-danger border-3">
+            <small class="text-danger d-block" style="font-size: 0.65rem; line-height: 1.2;">
+                <strong>Alasan:</strong> {{ $notif->pesan ?? 'Tidak ada keterangan tambahan' }}
+            </small>
+        </div>
+    @endif
+</div>
                                     </a>
                                 </li>
                             @empty

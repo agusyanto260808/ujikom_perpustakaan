@@ -101,9 +101,11 @@
                                 </span>
                                 <input type="text" name="search" class="form-control border-0 py-2 shadow-none bg-transparent" 
                                        placeholder="Cari judul, penulis, atau genre..." value="{{ request('search') }}">
-                                <button class="btn btn-indigo rounded-pill px-4 fw-bold" type="submit">
-                                    Cari Buku
-                                </button>
+                               <button class="btn btn-indigo rounded-pill px-4 fw-bold" 
+        type="submit" 
+        style="position: relative; z-index: 0;">
+    Cari Buku
+</button>
                             </div>
                         </form>
                     </div>

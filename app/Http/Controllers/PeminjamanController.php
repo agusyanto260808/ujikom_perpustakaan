@@ -62,7 +62,7 @@ class PeminjamanController extends Controller
         // 2. Validasi input
         $request->validate([
             'idbuku' => 'required|exists:buku,idbuku',
-            'tanggal_kembali' => 'required|date|after:today',
+            'tanggal_kembali' => 'required|date',
             'jumlah' => 'required|integer|min:1',
         ]);
 
